@@ -804,6 +804,7 @@ model Users {
   email            String       @unique
   is_account_admin Boolean      @default(false)
   is_admin         Boolean      @default(false)
+  role             UserRole     @default(PROJECT_MANAGER)
   created_on       DateTime     @default(now())
   lastLoginAt      DateTime?
   name             String?
@@ -846,6 +847,7 @@ model Users {
   @@index([userLanguage])
   @@index([is_admin])
   @@index([is_account_admin])
+  @@index([role])
   @@index([created_on])
   @@index([lastLoginAt])
 }
@@ -925,6 +927,38 @@ model gpt_models {
 enum gptStatus {
   ACTIVE
   INACTIVE
+}
+
+// ============================================
+// ROLE-BASED ACCESS CONTROL
+// ============================================
+
+enum UserRole {
+  ADMIN
+  GENERAL_MANAGER
+  CUSTOMER_CARE
+  PRODUCTION_MANAGER
+  PROJECT_MANAGER
+  SUBCONTRACTOR
+}
+
+enum PermissionValue {
+  ALLOW
+  DENY
+  OWN
+}
+
+model RolePermission {
+  id         String          @id @default(uuid()) @db.Uuid
+  role       UserRole
+  permission String          // e.g. "view_all_leads", "create_estimates"
+  value      PermissionValue @default(DENY)
+  updatedAt  DateTime        @updatedAt
+  updatedBy  String?         @db.Uuid
+
+  @@unique([role, permission])
+  @@index([role])
+  @@index([permission])
 }
 
 // ============================================

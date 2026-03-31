@@ -1,4 +1,4 @@
-import { PrismaClient, gptStatus } from "@prisma/client";
+import { PrismaClient, gptStatus, UserRole, PermissionValue } from "@prisma/client";
 import { Pool } from "pg";
 import { PrismaPg } from "@prisma/adapter-pg";
 import dotenv from "dotenv";
@@ -135,6 +135,7 @@ async function main() {
         userStatus: "ACTIVE",
         is_admin: true,
         is_account_admin: true,
+        role: "ADMIN",
       },
     });
     console.log(`Test user created: ${testUserEmail}`);
@@ -147,6 +148,7 @@ async function main() {
         userStatus: "ACTIVE",
         is_admin: true,
         is_account_admin: true,
+        role: "ADMIN",
       },
     });
     console.log(`Test user updated: ${testUserEmail}`);
@@ -182,6 +184,61 @@ async function main() {
     console.log("Lead Types seeded successfully");
   } else {
     console.log("Lead Types already seeded");
+  }
+
+  // Seed Role Permissions
+  const existingPerms = await prisma.rolePermission.findMany();
+  if (existingPerms.length === 0) {
+    const A = PermissionValue.ALLOW;
+    const D = PermissionValue.DENY;
+    const O = PermissionValue.OWN;
+
+    const matrix: Record<string, Record<UserRole, PermissionValue>> = {
+      view_all_leads:                 { ADMIN: A, GENERAL_MANAGER: A, CUSTOMER_CARE: A, PRODUCTION_MANAGER: D, PROJECT_MANAGER: O, SUBCONTRACTOR: D },
+      create_edit_leads:              { ADMIN: A, GENERAL_MANAGER: A, CUSTOMER_CARE: A, PRODUCTION_MANAGER: D, PROJECT_MANAGER: O, SUBCONTRACTOR: D },
+      view_pipeline:                  { ADMIN: A, GENERAL_MANAGER: A, CUSTOMER_CARE: A, PRODUCTION_MANAGER: A, PROJECT_MANAGER: O, SUBCONTRACTOR: D },
+      create_estimates:               { ADMIN: A, GENERAL_MANAGER: A, CUSTOMER_CARE: D, PRODUCTION_MANAGER: D, PROJECT_MANAGER: A, SUBCONTRACTOR: D },
+      approve_estimates:              { ADMIN: A, GENERAL_MANAGER: A, CUSTOMER_CARE: D, PRODUCTION_MANAGER: D, PROJECT_MANAGER: D, SUBCONTRACTOR: D },
+      schedule_jobs:                  { ADMIN: A, GENERAL_MANAGER: A, CUSTOMER_CARE: D, PRODUCTION_MANAGER: A, PROJECT_MANAGER: D, SUBCONTRACTOR: D },
+      dispatch_board:                 { ADMIN: A, GENERAL_MANAGER: A, CUSTOMER_CARE: D, PRODUCTION_MANAGER: A, PROJECT_MANAGER: D, SUBCONTRACTOR: D },
+      update_job_status:              { ADMIN: A, GENERAL_MANAGER: A, CUSTOMER_CARE: A, PRODUCTION_MANAGER: A, PROJECT_MANAGER: O, SUBCONTRACTOR: O },
+      upload_job_photos:              { ADMIN: A, GENERAL_MANAGER: A, CUSTOMER_CARE: A, PRODUCTION_MANAGER: A, PROJECT_MANAGER: A, SUBCONTRACTOR: A },
+      view_job_cost_margin:           { ADMIN: A, GENERAL_MANAGER: A, CUSTOMER_CARE: A, PRODUCTION_MANAGER: A, PROJECT_MANAGER: D, SUBCONTRACTOR: D },
+      create_invoices:                { ADMIN: A, GENERAL_MANAGER: A, CUSTOMER_CARE: A, PRODUCTION_MANAGER: D, PROJECT_MANAGER: D, SUBCONTRACTOR: D },
+      view_revenue_reports:           { ADMIN: A, GENERAL_MANAGER: A, CUSTOMER_CARE: A, PRODUCTION_MANAGER: D, PROJECT_MANAGER: O, SUBCONTRACTOR: D },
+      collect_payments:               { ADMIN: A, GENERAL_MANAGER: A, CUSTOMER_CARE: A, PRODUCTION_MANAGER: D, PROJECT_MANAGER: A, SUBCONTRACTOR: D },
+      insurance_depreciation_tracking:{ ADMIN: A, GENERAL_MANAGER: A, CUSTOMER_CARE: A, PRODUCTION_MANAGER: D, PROJECT_MANAGER: D, SUBCONTRACTOR: D },
+      answer_log_calls:               { ADMIN: A, GENERAL_MANAGER: A, CUSTOMER_CARE: A, PRODUCTION_MANAGER: D, PROJECT_MANAGER: D, SUBCONTRACTOR: D },
+      send_sms_email:                 { ADMIN: A, GENERAL_MANAGER: A, CUSTOMER_CARE: A, PRODUCTION_MANAGER: A, PROJECT_MANAGER: O, SUBCONTRACTOR: D },
+      manage_users_roles:             { ADMIN: A, GENERAL_MANAGER: O, CUSTOMER_CARE: D, PRODUCTION_MANAGER: D, PROJECT_MANAGER: D, SUBCONTRACTOR: D },
+      system_settings:                { ADMIN: A, GENERAL_MANAGER: D, CUSTOMER_CARE: D, PRODUCTION_MANAGER: D, PROJECT_MANAGER: D, SUBCONTRACTOR: D },
+      manage_integrations:            { ADMIN: A, GENERAL_MANAGER: D, CUSTOMER_CARE: D, PRODUCTION_MANAGER: D, PROJECT_MANAGER: D, SUBCONTRACTOR: D },
+      view_audit_log:                 { ADMIN: A, GENERAL_MANAGER: A, CUSTOMER_CARE: A, PRODUCTION_MANAGER: D, PROJECT_MANAGER: D, SUBCONTRACTOR: D },
+      delete_records:                 { ADMIN: A, GENERAL_MANAGER: O, CUSTOMER_CARE: D, PRODUCTION_MANAGER: D, PROJECT_MANAGER: D, SUBCONTRACTOR: D },
+      export_data:                    { ADMIN: A, GENERAL_MANAGER: A, CUSTOMER_CARE: A, PRODUCTION_MANAGER: D, PROJECT_MANAGER: D, SUBCONTRACTOR: D },
+      bulk_actions:                   { ADMIN: A, GENERAL_MANAGER: A, CUSTOMER_CARE: A, PRODUCTION_MANAGER: A, PROJECT_MANAGER: D, SUBCONTRACTOR: D },
+    };
+
+    const rows: { role: UserRole; permission: string; value: PermissionValue }[] = [];
+    for (const [permission, roles] of Object.entries(matrix)) {
+      for (const [role, value] of Object.entries(roles)) {
+        rows.push({ role: role as UserRole, permission, value });
+      }
+    }
+
+    await prisma.rolePermission.createMany({ data: rows });
+    console.log(`Role Permissions seeded: ${rows.length} rows`);
+  } else {
+    console.log("Role Permissions already seeded");
+  }
+
+  // Backfill existing users: is_admin=true → ADMIN, others → PROJECT_MANAGER (default)
+  const admins = await prisma.users.updateMany({
+    where: { is_admin: true },
+    data: { role: "ADMIN" },
+  });
+  if (admins.count > 0) {
+    console.log(`Backfilled ${admins.count} admin user(s) with ADMIN role`);
   }
 
   console.log("-------- Seed DB completed --------");
