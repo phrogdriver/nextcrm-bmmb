@@ -20,21 +20,25 @@ import { Input } from "@/components/ui/input";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { setNewPassword } from "@/actions/user/set-new-password";
-import { Eye, EyeOff } from "lucide-react";
 
-const FormSchema = z.object({
-  password: z.string().min(5, "Password must be at least 5 characters").max(50),
-});
+const FormSchema = z
+  .object({
+    password: z.string().min(5, "Password must be at least 5 characters").max(50),
+    cpassword: z.string().min(5, "Password must be at least 5 characters").max(50),
+  })
+  .refine((data) => data.password === data.cpassword, {
+    message: "Passwords do not match",
+    path: ["cpassword"],
+  });
 
 export function PasswordChangeForm({ userId }: { userId: string }) {
   const [isLoading, setIsLoading] = useState<boolean>(false);
-  const [showPassword, setShowPassword] = useState(false);
   const t = useTranslations("PasswordChangeForm");
-
   const router = useRouter();
 
   const form = useForm<z.infer<typeof FormSchema>>({
     resolver: zodResolver(FormSchema),
+    defaultValues: { password: "", cpassword: "" },
   });
 
   async function onSubmit(data: z.infer<typeof FormSchema>) {
@@ -43,6 +47,7 @@ export function PasswordChangeForm({ userId }: { userId: string }) {
       const result = await setNewPassword({
         userId,
         password: data.password,
+        cpassword: data.cpassword,
       });
 
       if (result.error) {
@@ -51,7 +56,7 @@ export function PasswordChangeForm({ userId }: { userId: string }) {
       }
 
       toast.success(t("success"));
-      form.reset({ password: "" });
+      form.reset();
       router.refresh();
     } catch (error: any) {
       toast.error(t("errorPrefix") + (error?.message || "Unknown error"));
@@ -73,27 +78,30 @@ export function PasswordChangeForm({ userId }: { userId: string }) {
             <FormItem className="w-1/3">
               <FormLabel>New Password</FormLabel>
               <FormControl>
-                <div className="relative">
-                  <Input
-                    disabled={isLoading}
-                    type={showPassword ? "text" : "password"}
-                    placeholder="••••••••"
-                    className="pr-10"
-                    {...field}
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
-                    tabIndex={-1}
-                  >
-                    {showPassword ? (
-                      <EyeOff className="h-4 w-4" />
-                    ) : (
-                      <Eye className="h-4 w-4" />
-                    )}
-                  </button>
-                </div>
+                <Input
+                  disabled={isLoading}
+                  type="password"
+                  placeholder="Enter new password"
+                  {...field}
+                />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        <FormField
+          control={form.control}
+          name="cpassword"
+          render={({ field }) => (
+            <FormItem className="w-1/3">
+              <FormLabel>Confirm Password</FormLabel>
+              <FormControl>
+                <Input
+                  disabled={isLoading}
+                  type="password"
+                  placeholder="Re-enter password"
+                  {...field}
+                />
               </FormControl>
               <FormMessage />
             </FormItem>
