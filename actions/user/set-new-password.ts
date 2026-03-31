@@ -8,7 +8,7 @@ import { revalidatePath } from "next/cache";
 export const setNewPassword = async (data: {
   userId: string;
   password: string;
-  cpassword: string;
+  cpassword?: string;
 }) => {
   const session = await getServerSession(authOptions);
   if (!session) return { error: "Unauthorized" };
@@ -16,18 +16,13 @@ export const setNewPassword = async (data: {
   const { userId, password, cpassword } = data;
 
   if (!userId) return { error: "userId is required" };
-  if (!password || !cpassword) return { error: "No password provided" };
-  if (password !== cpassword) return { error: "Passwords do not match" };
+  if (!password) return { error: "No password provided" };
+  // Support legacy callers that still send cpassword
+  if (cpassword && password !== cpassword) return { error: "Passwords do not match" };
 
   // Ensure user can only update their own password unless admin
   if (session.user.id !== userId && !session.user.isAdmin) {
     return { error: "Forbidden" };
-  }
-
-  if (session.user?.email === "demo@nextcrm.io") {
-    return {
-      error: "Hey, don't be a fool! There are so many works done! Thanks!",
-    };
   }
 
   try {

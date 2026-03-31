@@ -6,14 +6,15 @@ import { revalidatePath } from "next/cache";
 
 export const updateProfile = async (data: {
   userId: string;
-  name: string;
-  username: string;
-  account_name: string;
+  first_name: string;
+  last_name: string;
+  phone?: string | null;
+  account_name?: string | null;
 }) => {
   const session = await getServerSession(authOptions);
   if (!session) return { error: "Unauthorized" };
 
-  const { userId, name, username, account_name } = data;
+  const { userId, first_name, last_name, phone, account_name } = data;
 
   if (!userId) return { error: "userId is required" };
 
@@ -23,8 +24,11 @@ export const updateProfile = async (data: {
   }
 
   try {
+    // Keep "name" in sync for backward compatibility
+    const name = `${first_name} ${last_name}`.trim();
+
     const user = await prismadb.users.update({
-      data: { name, username, account_name },
+      data: { first_name, last_name, name, phone, account_name },
       where: { id: userId },
     });
     revalidatePath("/[locale]/(routes)/profile", "page");

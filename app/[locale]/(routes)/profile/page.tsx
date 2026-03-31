@@ -22,7 +22,8 @@ const ProfilePage = async () => {
     return <div>No user data.</div>;
   }
 
-  const llmKeys = await getUserApiKeys();
+  const isAdmin = data.is_admin === true;
+  const llmKeys = isAdmin ? await getUserApiKeys() : [];
 
   return (
     <Container title={t("title")} description={t("description")}>
@@ -30,12 +31,13 @@ const ProfilePage = async () => {
         <ProfileHero data={data} />
         <Suspense fallback={<div className="p-6 text-sm text-muted-foreground">Loading...</div>}>
           <ProfileTabs
+            isAdmin={isAdmin}
             profileContent={<ProfileTabContent data={data} />}
             securityContent={<SecurityTabContent userId={data.id} />}
             preferencesContent={<PreferencesTabContent userId={data.id} />}
-            developerContent={<DeveloperTabContent userId={data.id} />}
+            developerContent={isAdmin ? <DeveloperTabContent userId={data.id} /> : null}
             emailsContent={<EmailAccountsTabContent />}
-            llmsContent={<LlmsTabContent initialKeys={llmKeys} />}
+            llmsContent={isAdmin ? <LlmsTabContent initialKeys={llmKeys} /> : null}
           />
         </Suspense>
       </div>

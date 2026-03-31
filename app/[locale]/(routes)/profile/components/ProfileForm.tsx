@@ -9,19 +9,11 @@ import { Button } from "@/components/ui/button";
 import {
   Form,
   FormControl,
-  FormDescription,
   FormField,
   FormItem,
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { toast } from "sonner";
 import { Input } from "@/components/ui/input";
 import { useState } from "react";
@@ -34,37 +26,41 @@ interface ProfileFormProps {
 
 const FormSchema = z.object({
   id: z.string(),
-  name: z.string().min(3).max(50),
-  username: z.string().min(2).max(50),
-  account_name: z.string().min(2).max(50),
+  first_name: z.string().min(1, "First name is required").max(50),
+  last_name: z.string().min(1, "Last name is required").max(50),
+  email: z.string().email(),
+  phone: z.string().max(20).optional().or(z.literal("")),
+  account_name: z.string().max(50).optional().or(z.literal("")),
 });
 
 export function ProfileForm({ data }: ProfileFormProps) {
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const t = useTranslations("ProfileForm");
-
   const router = useRouter();
 
+  const isSubcontractor = data.role === "SUBCONTRACTOR";
 
   const form = useForm<z.infer<typeof FormSchema>>({
     resolver: zodResolver(FormSchema),
-    defaultValues: data
-      ? { ...data }
-      : {
-          name: "",
-          username: "",
-          account_name: "",
-        },
+    defaultValues: {
+      id: data.id ?? "",
+      first_name: data.first_name ?? "",
+      last_name: data.last_name ?? "",
+      email: data.email ?? "",
+      phone: data.phone ?? "",
+      account_name: data.account_name ?? "",
+    },
   });
 
-  async function onSubmit(data: z.infer<typeof FormSchema>) {
+  async function onSubmit(formData: z.infer<typeof FormSchema>) {
     try {
       setIsLoading(true);
       const result = await updateProfile({
-        userId: data.id,
-        name: data.name,
-        username: data.username,
-        account_name: data.account_name,
+        userId: formData.id,
+        first_name: formData.first_name,
+        last_name: formData.last_name,
+        phone: formData.phone || null,
+        account_name: isSubcontractor ? (formData.account_name || null) : null,
       });
 
       if (result.error) {
@@ -75,7 +71,7 @@ export function ProfileForm({ data }: ProfileFormProps) {
       toast.success("Profile saved successfully");
       router.refresh();
     } catch (error) {
-      toast.error("Something went wrong while activating your notion integration.");
+      toast.error("Something went wrong while updating your profile.");
     } finally {
       setIsLoading(false);
     }
@@ -85,55 +81,90 @@ export function ProfileForm({ data }: ProfileFormProps) {
     <Form {...form}>
       <form
         onSubmit={form.handleSubmit(onSubmit)}
-        className="flex space-x-5 w-full p-5 items-end"
+        className="space-y-4 p-5"
       >
-        <FormField
-          control={form.control}
-          name="name"
-          render={({ field }) => (
-            <FormItem className="w-1/3">
-              <FormLabel>{t("fullName")}</FormLabel>
-              <FormControl>
-                <Input disabled={isLoading} placeholder="John Doe" {...field} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <FormField
+            control={form.control}
+            name="first_name"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>First Name</FormLabel>
+                <FormControl>
+                  <Input disabled={isLoading} placeholder="John" {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={form.control}
+            name="last_name"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Last Name</FormLabel>
+                <FormControl>
+                  <Input disabled={isLoading} placeholder="Doe" {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={form.control}
+            name="email"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Email</FormLabel>
+                <FormControl>
+                  <Input disabled className="bg-muted" {...field} />
+                </FormControl>
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={form.control}
+            name="phone"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Phone</FormLabel>
+                <FormControl>
+                  <Input
+                    disabled={isLoading}
+                    placeholder="(555) 123-4567"
+                    type="tel"
+                    {...field}
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          {isSubcontractor && (
+            <FormField
+              control={form.control}
+              name="account_name"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Company</FormLabel>
+                  <FormControl>
+                    <Input
+                      disabled={isLoading}
+                      placeholder="ABC Gutters LLC"
+                      {...field}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
           )}
-        />
-        <FormField
-          control={form.control}
-          name="username"
-          render={({ field }) => (
-            <FormItem className="w-1/3">
-              <FormLabel>{t("username")}</FormLabel>
-              <FormControl>
-                <Input disabled={isLoading} placeholder="jdoe" {...field} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-        <FormField
-          control={form.control}
-          name="account_name"
-          render={({ field }) => (
-            <FormItem className="w-1/3">
-              <FormLabel>{t("company")}</FormLabel>
-              <FormControl>
-                <Input
-                  disabled={isLoading}
-                  placeholder="Tesla Inc.,"
-                  {...field}
-                />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-
-        <Button className="w-[150px]" type="submit">
-          {t("updateButton")}
-        </Button>
+        </div>
+        <div className="flex justify-end pt-2">
+          <Button className="w-[150px]" type="submit" disabled={isLoading}>
+            {isLoading ? "Saving..." : t("updateButton")}
+          </Button>
+        </div>
       </form>
     </Form>
   );

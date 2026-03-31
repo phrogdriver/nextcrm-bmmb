@@ -6,9 +6,6 @@ import { useTranslations } from "next-intl";
 import { cn } from "@/lib/utils";
 import { UserCircle, Lock, Globe, Code2, Mail, KeyRound } from "lucide-react";
 
-// Do NOT import tab content components here — they are Server Components
-// and must be passed as ReactNode props from page.tsx
-
 type Tab = "profile" | "security" | "preferences" | "developer" | "emails" | "llms";
 
 const TAB_ICONS: Record<Tab, React.ElementType> = {
@@ -21,15 +18,17 @@ const TAB_ICONS: Record<Tab, React.ElementType> = {
 };
 
 type Props = {
+  isAdmin: boolean;
   profileContent: React.ReactNode;
   securityContent: React.ReactNode;
   preferencesContent: React.ReactNode;
-  developerContent: React.ReactNode;
+  developerContent: React.ReactNode | null;
   emailsContent: React.ReactNode;
-  llmsContent: React.ReactNode;
+  llmsContent: React.ReactNode | null;
 };
 
 export function ProfileTabs({
+  isAdmin,
   profileContent,
   securityContent,
   preferencesContent,
@@ -41,18 +40,20 @@ export function ProfileTabs({
   const router = useRouter();
   const searchParams = useSearchParams();
 
-  const TAB_IDS: Tab[] = ["profile", "security", "preferences", "developer", "emails", "llms"];
-  const raw = searchParams.get("tab");
-  const activeTab: Tab = TAB_IDS.includes(raw as Tab) ? (raw as Tab) : "profile";
-
-  const tabs: { id: Tab; label: string; desc: string }[] = [
+  const allTabs: { id: Tab; label: string; desc: string; adminOnly?: boolean }[] = [
     { id: "profile", label: t("tabs.profile"), desc: t("tabs.profileDesc") },
     { id: "security", label: t("tabs.security"), desc: t("tabs.securityDesc") },
     { id: "preferences", label: t("tabs.preferences"), desc: t("tabs.preferencesDesc") },
-    { id: "developer", label: t("tabs.developer"), desc: t("tabs.developerDesc") },
+    { id: "developer", label: t("tabs.developer"), desc: t("tabs.developerDesc"), adminOnly: true },
     { id: "emails", label: t("tabs.emails"), desc: t("tabs.emailsDesc") },
-    { id: "llms", label: t("tabs.llms"), desc: t("tabs.llmsDesc") },
+    { id: "llms", label: t("tabs.llms"), desc: t("tabs.llmsDesc"), adminOnly: true },
   ];
+
+  const tabs = allTabs.filter((tab) => !tab.adminOnly || isAdmin);
+  const TAB_IDS = tabs.map((t) => t.id);
+
+  const raw = searchParams.get("tab");
+  const activeTab: Tab = TAB_IDS.includes(raw as Tab) ? (raw as Tab) : "profile";
 
   const activeTabMeta = tabs.find((t) => t.id === activeTab) ?? tabs[0];
 

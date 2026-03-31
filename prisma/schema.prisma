@@ -808,6 +808,9 @@ model Users {
   created_on       DateTime     @default(now())
   lastLoginAt      DateTime?
   name             String?
+  first_name       String?
+  last_name        String?
+  phone            String?
   password         String?
   username         String?
   userStatus       ActiveStatus @default(PENDING)
