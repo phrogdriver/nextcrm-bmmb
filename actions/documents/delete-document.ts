@@ -20,10 +20,10 @@ export async function deleteDocument(documentId: string) {
 
   await prismadb.documents.delete({ where: { id: documentId } });
 
-  if (document.key) {
+  if (document.key && minioClient) {
     await minioClient.send(
       new DeleteObjectCommand({
-        Bucket: MINIO_BUCKET,
+        Bucket: MINIO_BUCKET!,
         Key: document.key,
       })
     );

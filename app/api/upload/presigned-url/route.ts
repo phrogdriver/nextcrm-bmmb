@@ -49,6 +49,9 @@ export async function POST(req: NextRequest) {
 
   // Presigned URL valid for 10 minutes
   try {
+    if (!minioClient) {
+      return NextResponse.json({ error: "File storage is not configured" }, { status: 503 });
+    }
     const presignedUrl = await getSignedUrl(minioClient, command, { expiresIn: 600 });
 
     // The public URL where the file will be accessible after upload
