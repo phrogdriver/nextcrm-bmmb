@@ -78,13 +78,11 @@ interface Session {
 
 interface AppSidebarProps extends React.ComponentProps<typeof Sidebar> {
   dict: any;
-  build: number;
   session: Session;
 }
 
 export function AppSidebar({
   dict,
-  build,
   session,
   ...props
 }: AppSidebarProps) {
