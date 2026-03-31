@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import Image from "next/image";
 import {
   Sidebar,
   SidebarContent,
@@ -133,14 +134,15 @@ export function AppSidebar({
             isExpanded ? "gap-x-4" : "justify-center",
           )}
         >
-          {/* "N" Branding Symbol with rotation animation */}
-          <div
-            className={cn(
-              "flex-shrink-0 border rounded-full px-4 py-2 transition-transform duration-500",
-              isExpanded && "rotate-[360deg]",
-            )}
-          >
-            N
+          {/* Logo */}
+          <div className="flex-shrink-0">
+            <Image
+              src="/images/logo.png"
+              alt={process.env.NEXT_PUBLIC_APP_NAME || "Integrity Roofing"}
+              width={isExpanded ? 40 : 32}
+              height={isExpanded ? 40 : 32}
+              className="rounded-full transition-all duration-300"
+            />
           </div>
 
           {/* App Name - visible when expanded, hidden when collapsed */}
@@ -150,7 +152,7 @@ export function AppSidebar({
               !isExpanded ? "w-0 opacity-0" : "w-auto opacity-100",
             )}
           >
-            {process.env.NEXT_PUBLIC_APP_NAME || "NextCRM"}
+            {process.env.NEXT_PUBLIC_APP_NAME || "Integrity Roofing"}
           </h1>
         </div>
       </SidebarHeader>
