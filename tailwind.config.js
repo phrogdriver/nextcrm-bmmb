@@ -17,63 +17,67 @@ module.exports = {
   		}
   	},
   	extend: {
+  		fontFamily: {
+  			sans: ['var(--font-sans)', 'DM Sans', 'system-ui', 'sans-serif'],
+  			mono: ['var(--font-mono)', 'DM Mono', 'Consolas', 'monospace'],
+  		},
   		colors: {
   			tremor: {
   				brand: {
-  					faint: '#eff6ff',
-  					muted: '#bfdbfe',
-  					subtle: '#60a5fa',
-  					DEFAULT: '#3b82f6',
-  					emphasis: '#1d4ed8',
+  					faint: '#EDF4F9',
+  					muted: '#A8C8E1',
+  					subtle: '#5489B8',
+  					DEFAULT: '#3B6B9C',
+  					emphasis: '#1B2A4A',
   					inverted: '#ffffff'
   				},
   				background: {
-  					muted: '#f9fafb',
-  					subtle: '#f3f4f6',
+  					muted: '#FAF9F7',
+  					subtle: '#F3F1EE',
   					DEFAULT: '#ffffff',
-  					emphasis: '#374151'
+  					emphasis: '#47433C'
   				},
   				border: {
-  					DEFAULT: '#e5e7eb'
+  					DEFAULT: '#E0DDD7'
   				},
   				ring: {
-  					DEFAULT: '#e5e7eb'
+  					DEFAULT: '#E0DDD7'
   				},
   				content: {
-  					subtle: '#9ca3af',
-  					DEFAULT: '#6b7280',
-  					emphasis: '#374151',
-  					strong: '#111827',
+  					subtle: '#A8A49A',
+  					DEFAULT: '#635D54',
+  					emphasis: '#47433C',
+  					strong: '#1A1814',
   					inverted: '#ffffff'
   				}
   			},
   			'dark-tremor': {
   				brand: {
-  					faint: '#0B1229',
-  					muted: '#172554',
-  					subtle: '#1e40af',
-  					DEFAULT: '#3b82f6',
-  					emphasis: '#60a5fa',
-  					inverted: '#030712'
+  					faint: '#111E33',
+  					muted: '#1A2F4D',
+  					subtle: '#244166',
+  					DEFAULT: '#5489B8',
+  					emphasis: '#7BAACF',
+  					inverted: '#0D0C09'
   				},
   				background: {
-  					muted: '#131A2B',
-  					subtle: '#1f2937',
-  					DEFAULT: '#111827',
-  					emphasis: '#d1d5db'
+  					muted: '#0D0C09',
+  					subtle: '#1A1814',
+  					DEFAULT: '#1A1814',
+  					emphasis: '#C8C4BC'
   				},
   				border: {
-  					DEFAULT: '#1f2937'
+  					DEFAULT: '#2E2B26'
   				},
   				ring: {
-  					DEFAULT: '#1f2937'
+  					DEFAULT: '#2E2B26'
   				},
   				content: {
-  					subtle: '#4b5563',
-  					DEFAULT: '#6b7280',
-  					emphasis: '#e5e7eb',
-  					strong: '#f9fafb',
-  					inverted: '#000000'
+  					subtle: '#635D54',
+  					DEFAULT: '#877F74',
+  					emphasis: '#E0DDD7',
+  					strong: '#FAF9F7',
+  					inverted: '#0D0C09'
   				}
   			},
   			border: 'hsl(var(--border))',
