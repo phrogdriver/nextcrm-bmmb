@@ -41,17 +41,17 @@ export async function POST(req: NextRequest) {
   const ext = filename.includes(".") ? filename.split(".").pop()?.trim() || "bin" : "bin";
   const key = `${folder}/${randomUUID()}.${ext}`;
 
-  const command = new PutObjectCommand({
-    Bucket: MINIO_BUCKET,
-    Key: key,
-    ContentType: contentType,
-  });
-
   // Presigned URL valid for 10 minutes
   try {
-    if (!minioClient) {
+    if (!minioClient || !MINIO_BUCKET) {
       return NextResponse.json({ error: "File storage is not configured" }, { status: 503 });
     }
+
+    const command = new PutObjectCommand({
+      Bucket: MINIO_BUCKET,
+      Key: key,
+      ContentType: contentType,
+    });
     const presignedUrl = await getSignedUrl(minioClient, command, { expiresIn: 600 });
 
     // The public URL where the file will be accessible after upload
