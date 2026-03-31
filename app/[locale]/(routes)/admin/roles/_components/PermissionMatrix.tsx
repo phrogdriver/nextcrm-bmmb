@@ -23,7 +23,7 @@ import {
   ROLE_LABELS,
   ROLE_ORDER,
   type Permission,
-} from "@/lib/permissions";
+} from "@/lib/permissions.shared";
 import {
   updatePermissionCell,
   resetRoleToDefaults,
