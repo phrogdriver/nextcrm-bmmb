@@ -110,13 +110,14 @@ export function LoginComponent() {
       }
       if (status?.ok) {
         toast.success("Login successful.");
+        router.push("/");
+        return;
       }
     } catch (error: any) {
       console.log(error);
       toast.error(error?.message || error?.toString() || "An error occurred during login");
     } finally {
       setIsLoading(false);
-      router.push("/");
     }
   }
 
