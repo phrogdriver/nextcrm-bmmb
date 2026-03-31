@@ -1,11 +1,8 @@
-import Feedback from "./Feedback";
 import FulltextSearch from "./FulltextSearch";
 
 import { Separator } from "@/components/ui/separator";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { ThemeToggle } from "@/components/ThemeToggle";
-import { CommandComponent } from "@/components/CommandComponent";
-import SupportComponent from "@/components/support";
 
 type Props = {
   id: string;
@@ -40,10 +37,7 @@ const Header = ({ id, lang }: Props) => {
           <FulltextSearch />
         </div>
         <div className="flex items-center gap-2">
-          <CommandComponent />
-          <Feedback />
           <ThemeToggle />
-          <SupportComponent />
         </div>
       </div>
       <Separator />
