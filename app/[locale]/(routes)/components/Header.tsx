@@ -3,7 +3,6 @@ import FulltextSearch from "./FulltextSearch";
 
 import { Separator } from "@/components/ui/separator";
 import { SidebarTrigger } from "@/components/ui/sidebar";
-import { SetLanguage } from "@/components/SetLanguage";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { CommandComponent } from "@/components/CommandComponent";
 import SupportComponent from "@/components/support";
@@ -42,7 +41,6 @@ const Header = ({ id, lang }: Props) => {
         </div>
         <div className="flex items-center gap-2">
           <CommandComponent />
-          <SetLanguage userId={id} />
           <Feedback />
           <ThemeToggle />
           <SupportComponent />
