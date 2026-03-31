@@ -12,7 +12,7 @@ export async function ProfileHero({ data }: Props) {
   const roleLabel = ROLE_LABELS[data.role] ?? data.role;
 
   return (
-    <div className="bg-gradient-to-r from-blue-500 to-violet-600 px-7 py-6 flex items-center gap-4">
+    <div className="px-7 py-6 flex items-center gap-4" style={{ background: "linear-gradient(to right, #1B2A4A, #2A3F6A)" }}>
       <ProfileHeroAvatar avatar={data.avatar} name={displayName} />
       <div>
         <div className="text-white text-lg font-bold leading-tight">
