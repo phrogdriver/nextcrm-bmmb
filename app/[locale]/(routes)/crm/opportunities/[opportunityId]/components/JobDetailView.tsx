@@ -11,11 +11,21 @@ import { getAuditLogByEntity } from "@/actions/crm/audit-log/get-audit-log-by-en
 import { JobHeader } from "./JobHeader";
 import { StageProgressBar } from "./StageProgressBar";
 import { GuidancePanel } from "./GuidancePanel";
-import { InsuranceCard } from "./InsuranceCard";
 import { JobSidebar } from "./JobSidebar";
 import { StageTransitionForm } from "./StageTransitionForm";
 
-// Reuse existing activity + audit components
+// Section cards
+import { AppointmentsCard } from "./AppointmentsCard";
+import { TasksCard } from "./TasksCard";
+import { WorkOrdersCard } from "./WorkOrdersCard";
+import { BillingCard } from "./BillingCard";
+import { ContractWorksheetCard } from "./ContractWorksheetCard";
+import { DocumentsCard } from "./DocumentsCard";
+import { InsuranceCard } from "./InsuranceCard";
+import { PropertyPhotosCard } from "./PropertyPhotosCard";
+import { MeasurementsCard } from "./MeasurementsCard";
+
+// Existing activity + audit components
 import { ActivitiesView } from "@/components/crm/activities/ActivitiesView";
 import { ActivityForm } from "@/components/crm/activities/ActivityForm";
 import { AuditTimeline } from "@/components/crm/audit-log/Timeline";
@@ -50,6 +60,10 @@ export function JobDetailView({
   const isInsurance = job.payor_type === "INSURANCE";
   const currentStage = stages.find((s) => s.id === job.sales_stage) ?? null;
 
+  const propertyAddress = job.assigned_property
+    ? `${job.assigned_property.address}${job.assigned_property.city ? `, ${job.assigned_property.city}` : ""}`
+    : undefined;
+
   const handleTransition = useCallback((stageId: string, stageName: string) => {
     setTransitionTarget({ id: stageId, name: stageName });
   }, []);
@@ -78,8 +92,8 @@ export function JobDetailView({
         <div className="px-4 py-6 sm:px-6">
           <div className="flex flex-col lg:flex-row gap-6">
             {/* Main Column */}
-            <div className="flex-1 min-w-0 space-y-6">
-              {/* Stage Progress */}
+            <div className="flex-1 min-w-0 space-y-4">
+              {/* 1. Always visible: Stage Progress */}
               <StageProgressBar
                 stages={stages}
                 currentStageId={job.sales_stage}
@@ -88,16 +102,19 @@ export function JobDetailView({
                 isInsurance={isInsurance}
               />
 
-              {/* Guidance */}
+              {/* 2. Always visible: Guidance */}
               <GuidancePanel
                 stageName={currentStage?.name ?? ""}
                 guidance={guidance}
               />
 
-              {/* Insurance Card (conditional) */}
-              <InsuranceCard job={job} />
+              {/* 3. Open: Appointments */}
+              <AppointmentsCard />
 
-              {/* Activity Timeline + Audit History */}
+              {/* 4. Open: Tasks */}
+              <TasksCard />
+
+              {/* 5. Open: Activity Timeline + Audit History */}
               <Tabs defaultValue="activity">
                 <TabsList>
                   <TabsTrigger value="activity">Activity</TabsTrigger>
@@ -119,6 +136,27 @@ export function JobDetailView({
                   />
                 </TabsContent>
               </Tabs>
+
+              {/* 6. Collapsed: Work Orders */}
+              <WorkOrdersCard />
+
+              {/* 7. Collapsed: Billing */}
+              <BillingCard />
+
+              {/* 8. Collapsed: Contract Worksheet */}
+              <ContractWorksheetCard />
+
+              {/* 9. Collapsed: Documents */}
+              <DocumentsCard />
+
+              {/* 10. Collapsed: Insurance (conditional) */}
+              <InsuranceCard job={job} />
+
+              {/* 11. Collapsed: Property Photos */}
+              <PropertyPhotosCard address={propertyAddress} />
+
+              {/* 12. Collapsed: Measurements */}
+              <MeasurementsCard />
             </div>
 
             {/* Sidebar (sticky on desktop) */}
