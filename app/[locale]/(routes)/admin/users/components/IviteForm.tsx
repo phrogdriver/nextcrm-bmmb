@@ -29,7 +29,8 @@ import { useTranslations } from "next-intl";
 import { inviteUser } from "@/actions/admin/users/invite-user";
 
 const FormSchema = z.object({
-  name: z.string().min(3).max(50),
+  firstName: z.string().min(1, "First name is required").max(50),
+  lastName: z.string().min(1, "Last name is required").max(50),
   email: z.string().email(),
   language: z
     .string({
@@ -63,7 +64,8 @@ export function InviteForm() {
       toast.error(t("inviteForm.errorDesc"));
     } finally {
       form.reset({
-        name: "",
+        firstName: "",
+        lastName: "",
         email: "",
         language: "en",
       });
@@ -80,12 +82,25 @@ export function InviteForm() {
       >
         <FormField
           control={form.control}
-          name="name"
+          name="firstName"
           render={({ field }) => (
-            <FormItem className="w-1/3">
-              <FormLabel>{t("inviteForm.name")}</FormLabel>
+            <FormItem className="w-1/4">
+              <FormLabel>First Name</FormLabel>
               <FormControl>
-                <Input disabled={isLoading} placeholder="jdoe" {...field} />
+                <Input disabled={isLoading} placeholder="John" {...field} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        <FormField
+          control={form.control}
+          name="lastName"
+          render={({ field }) => (
+            <FormItem className="w-1/4">
+              <FormLabel>Last Name</FormLabel>
+              <FormControl>
+                <Input disabled={isLoading} placeholder="Doe" {...field} />
               </FormControl>
               <FormMessage />
             </FormItem>

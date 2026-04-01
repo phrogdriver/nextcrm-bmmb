@@ -10,18 +10,21 @@ import { revalidatePath } from "next/cache";
 import { Language } from "@prisma/client";
 
 export const inviteUser = async (data: {
-  name: string;
+  firstName: string;
+  lastName: string;
   email: string;
   language: string;
 }) => {
   const session = await getServerSession(authOptions);
   if (!session) return { error: "Unauthorized" };
 
-  const { name, email, language } = data;
+  const { firstName, lastName, email, language } = data;
 
-  if (!name || !email || !language) {
-    return { error: "Name, Email, and Language is required!" };
+  if (!firstName || !lastName || !email || !language) {
+    return { error: "First Name, Last Name, Email, and Language are required!" };
   }
+
+  const name = `${firstName} ${lastName}`;
 
   let resend;
   try {
@@ -57,6 +60,8 @@ export const inviteUser = async (data: {
     const user = await prismadb.users.create({
       data: {
         name,
+        first_name: firstName,
+        last_name: lastName,
         username: "",
         avatar: "",
         account_name: "",

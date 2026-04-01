@@ -1,21 +1,14 @@
-import Container from "@/app/[locale]/(routes)/components/ui/Container";
 import React from "react";
+import Container from "@/app/[locale]/(routes)/components/ui/Container";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
 
-import { BasicView } from "./components/BasicView";
-import { FindSimilarButton } from "@/components/crm/find-similar-button";
+import { getJob, getAllStages } from "@/actions/crm/get-job";
+import { getActivitiesByEntity } from "@/actions/crm/activities/get-activities-by-entity";
+import { getAuditLogByEntity } from "@/actions/crm/audit-log/get-audit-log-by-entity";
+import { getStageGuidance } from "@/lib/pipeline/stage-guidance";
 
-import DocumentsView from "../../components/DocumentsView";
-import ContactsView from "../../components/ContactsView";
-import AccountsView from "../../components/AccountsView";
-
-import { getAllCrmData } from "@/actions/crm/get-crm-data";
-import { getOpportunity } from "@/actions/crm/get-opportunity";
-import { getContactsByOpportunityId } from "@/actions/crm/get-contacts-by-opportunityId";
-import { getDocumentsByOpportunityId } from "@/actions/documents/get-documents-by-opportunityId";
-import { getAccountsByOpportunityId } from "@/actions/crm/get-accounts-by-opportunityId";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { HistoryTab } from "./components/HistoryTab";
-import { ActivitiesSection } from "./components/ActivitiesSection";
+import { JobDetailView } from "./components/JobDetailView";
 
 const OpportunityView = async (
   props: {
@@ -23,44 +16,40 @@ const OpportunityView = async (
   }
 ) => {
   const params = await props.params;
+  const { opportunityId } = params;
 
-  const {
-    opportunityId
-  } = params;
+  const [job, stages, session] = await Promise.all([
+    getJob(opportunityId),
+    getAllStages(),
+    getServerSession(authOptions),
+  ]);
 
-  const opportunity: any = await getOpportunity(opportunityId);
-  const crmData = await getAllCrmData();
-  const accounts = await getAccountsByOpportunityId(opportunityId);
-  const contacts = await getContactsByOpportunityId(opportunityId);
-  const documents = await getDocumentsByOpportunityId(opportunityId);
+  if (!job) return <div>Job not found</div>;
 
-  if (!opportunity) return <div>Opportunity not found</div>;
+  const [initialActivities, auditLog] = await Promise.all([
+    getActivitiesByEntity("opportunity", opportunityId),
+    getAuditLogByEntity("opportunity", opportunityId),
+  ]);
+
+  // Look up guidance for the current stage
+  const currentStage = stages.find(
+    (s: { id: string }) => s.id === job.sales_stage
+  );
+  const guidance = currentStage
+    ? getStageGuidance(currentStage.name) ?? null
+    : null;
+
+  const isAdmin = session?.user?.isAdmin ?? false;
 
   return (
-    <Container
-      title={`Opportunity ${opportunity.name} - detail view`}
-      description={"Description - " + opportunity.description}
-    >
-      <Tabs defaultValue="overview">
-        <TabsList>
-          <TabsTrigger value="overview">Overview</TabsTrigger>
-          <TabsTrigger value="history">History</TabsTrigger>
-        </TabsList>
-        <TabsContent value="overview">
-          <div className="space-y-5">
-            <BasicView data={opportunity} />
-            <ActivitiesSection opportunityId={opportunityId} />
-            <FindSimilarButton entityType="opportunity" recordId={opportunityId} />
-            <AccountsView crmData={crmData} data={accounts} />
-            <ContactsView crmData={crmData} data={contacts} />
-            <DocumentsView data={documents} />
-          </div>
-        </TabsContent>
-        <TabsContent value="history">
-          <HistoryTab opportunityId={opportunityId} />
-        </TabsContent>
-      </Tabs>
-    </Container>
+    <JobDetailView
+      job={job}
+      stages={stages}
+      guidance={guidance}
+      initialActivities={initialActivities}
+      auditLog={auditLog}
+      isAdmin={isAdmin}
+    />
   );
 };
 

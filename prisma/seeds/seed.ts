@@ -26,26 +26,43 @@ import crmIndustryTypeData from "../initial-data/crm_Industry_Type.json";
 
 // New CRM Config Tables
 const contactTypesData = [
-  { name: "Customer" },
-  { name: "Partner" },
+  { name: "Homeowner" },
+  { name: "Insurance Adjuster" },
+  { name: "Insurance Agent" },
+  { name: "Referral Partner" },
+  { name: "Subcontractor" },
   { name: "Vendor" },
-  { name: "Prospect" },
+  { name: "Other" },
 ];
 const leadSourcesData = [
-  { name: "Web" },
+  { name: "D2D Canvassing" },
+  { name: "Inbound Call" },
+  { name: "Web Form" },
+  { name: "Angi" },
+  { name: "Google LSA" },
+  { name: "Google Ads" },
+  { name: "Facebook Ads" },
   { name: "Referral" },
-  { name: "Cold Call" },
-  { name: "Email Campaign" },
-  { name: "Event" },
+  { name: "Repeat Customer" },
+  { name: "Storm Chaser" },
+  { name: "Webchat" },
   { name: "Other" },
 ];
 const leadStatusesData = [
   { name: "New" },
   { name: "Contacted" },
   { name: "Qualified" },
+  { name: "Converted" },
+  { name: "Dead" },
   { name: "Lost" },
 ];
-const leadTypesData = [{ name: "Demo" }];
+const leadTypesData = [
+  { name: "Roof Replacement" },
+  { name: "Roof Repair" },
+  { name: "Gutter" },
+  { name: "Paint" },
+  { name: "Other" },
+];
 
 const connectionString = process.env.DATABASE_URL!;
 const pool = new Pool({ connectionString });
@@ -69,16 +86,18 @@ async function main() {
     console.log("Opportunity Types already seeded");
   }
 
-  const crmOpportunitySaleStages =
-    await prisma.crm_Opportunities_Sales_Stages.findMany();
-
-  if (crmOpportunitySaleStages.length === 0) {
+  // Always reseed sales stages — delete old generic ones and insert roofing pipeline
+  const existingStages = await prisma.crm_Opportunities_Sales_Stages.findMany();
+  const isRoofingStages = existingStages.some(s => s.blueprint !== null);
+  if (!isRoofingStages) {
+    // Only wipe if stages are still generic (no blueprint field set)
+    await prisma.crm_Opportunities_Sales_Stages.deleteMany({});
     await prisma.crm_Opportunities_Sales_Stages.createMany({
       data: crmOpportunitySaleStagesData,
     });
-    console.log("Opportunity Sales Stages seeded successfully");
+    console.log("Opportunity Sales Stages reseeded with roofing pipeline");
   } else {
-    console.log("Opportunity Sales Stages already seeded");
+    console.log("Roofing Sales Stages already seeded");
   }
 
   const crmCampaigns = await prisma.crm_campaigns.findMany();
@@ -154,34 +173,43 @@ async function main() {
     console.log(`Test user updated: ${testUserEmail}`);
   }
 
+  // Reseed contact types, lead sources/statuses/types if still generic
   const contactTypes = await prisma.crm_Contact_Types.findMany();
-  if (contactTypes.length === 0) {
+  const isRoofingContactTypes = contactTypes.some(t => t.name === "Homeowner");
+  if (!isRoofingContactTypes) {
+    await prisma.crm_Contact_Types.deleteMany({});
     await prisma.crm_Contact_Types.createMany({ data: contactTypesData });
-    console.log("Contact Types seeded successfully");
+    console.log("Contact Types reseeded with roofing values");
   } else {
     console.log("Contact Types already seeded");
   }
 
   const leadSources = await prisma.crm_Lead_Sources.findMany();
-  if (leadSources.length === 0) {
+  const isRoofingLeadSources = leadSources.some(s => s.name === "D2D Canvassing");
+  if (!isRoofingLeadSources) {
+    await prisma.crm_Lead_Sources.deleteMany({});
     await prisma.crm_Lead_Sources.createMany({ data: leadSourcesData });
-    console.log("Lead Sources seeded successfully");
+    console.log("Lead Sources reseeded with roofing values");
   } else {
     console.log("Lead Sources already seeded");
   }
 
   const leadStatuses = await prisma.crm_Lead_Statuses.findMany();
-  if (leadStatuses.length === 0) {
+  const isRoofingLeadStatuses = leadStatuses.some(s => s.name === "Converted");
+  if (!isRoofingLeadStatuses) {
+    await prisma.crm_Lead_Statuses.deleteMany({});
     await prisma.crm_Lead_Statuses.createMany({ data: leadStatusesData });
-    console.log("Lead Statuses seeded successfully");
+    console.log("Lead Statuses reseeded with roofing values");
   } else {
     console.log("Lead Statuses already seeded");
   }
 
   const leadTypes = await prisma.crm_Lead_Types.findMany();
-  if (leadTypes.length === 0) {
+  const isRoofingLeadTypes = leadTypes.some(t => t.name === "Roof Replacement");
+  if (!isRoofingLeadTypes) {
+    await prisma.crm_Lead_Types.deleteMany({});
     await prisma.crm_Lead_Types.createMany({ data: leadTypesData });
-    console.log("Lead Types seeded successfully");
+    console.log("Lead Types reseeded with roofing values");
   } else {
     console.log("Lead Types already seeded");
   }

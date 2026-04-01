@@ -1,56 +1,41 @@
 [
-  {
-    "v": 0,
-    "name": "New",
-    "order": 0,
-    "probability": 10
-  },
-  {
-    "v": 0,
-    "name": "Need analysis",
-    "order": 0,
-    "probability": 25
-  },
-  {
-    "v": 0,
-    "name": "Signing",
-    "probability": 95,
-    "order": null
-  },
-  {
-    "v": 0,
-    "name": "Offer sent",
-    "probability": 30,
-    "order": null
-  },
-  {
-    "v": 0,
-    "name": "Offer accepted",
-    "probability": 45,
-    "order": null
-  },
-  {
-    "v": 0,
-    "name": "Contract draft",
-    "probability": 65,
-    "order": null
-  },
-  {
-    "v": 0,
-    "name": "Contract negotiation",
-    "probability": 75,
-    "order": null
-  },
-  {
-    "v": 0,
-    "name": "Send for signing",
-    "probability": 80,
-    "order": null
-  },
-  {
-    "v": 0,
-    "name": "Realization of the project",
-    "probability": 100,
-    "order": null
-  }
+  { "v": 0, "name": "New Prospect",                "order": 100,  "probability": 5,   "blueprint": "prospect_assignment",  "high_level_stage": "Lead",            "is_terminal": false, "insurance_only": false },
+  { "v": 0, "name": "Job Details Confirmed",       "order": 200,  "probability": 10,  "blueprint": "prospect_assignment",  "high_level_stage": "Lead",            "is_terminal": false, "insurance_only": false },
+  { "v": 0, "name": "Awaiting Rep Acceptance",     "order": 300,  "probability": 10,  "blueprint": "prospect_assignment",  "high_level_stage": "Lead",            "is_terminal": false, "insurance_only": false },
+  { "v": 0, "name": "Appointment Confirmed",       "order": 400,  "probability": 15,  "blueprint": "inspection",           "high_level_stage": "Inspection",      "is_terminal": false, "insurance_only": false },
+  { "v": 0, "name": "Reschedule Needed",           "order": 450,  "probability": 10,  "blueprint": "inspection",           "high_level_stage": "Inspection",      "is_terminal": false, "insurance_only": false },
+  { "v": 0, "name": "Inspected",                   "order": 500,  "probability": 25,  "blueprint": "inspection",           "high_level_stage": "Inspection",      "is_terminal": false, "insurance_only": false },
+  { "v": 0, "name": "Follow Up After Appointment", "order": 600,  "probability": 20,  "blueprint": "follow_up",            "high_level_stage": "Sales",           "is_terminal": false, "insurance_only": false },
+  { "v": 0, "name": "Future Follow Up",            "order": 650,  "probability": 15,  "blueprint": "follow_up",            "high_level_stage": "Sales",           "is_terminal": false, "insurance_only": false },
+  { "v": 0, "name": "Proposal Presented",          "order": 700,  "probability": 30,  "blueprint": "follow_up",            "high_level_stage": "Sales",           "is_terminal": false, "insurance_only": false },
+  { "v": 0, "name": "Signed Agreement",            "order": 800,  "probability": 50,  "blueprint": "pre_production",       "high_level_stage": "Pre-Production",  "is_terminal": false, "insurance_only": false },
+  { "v": 0, "name": "Claim Filed",                 "order": 900,  "probability": 50,  "blueprint": "pre_production",       "high_level_stage": "Pre-Production",  "is_terminal": false, "insurance_only": true },
+  { "v": 0, "name": "Waiting on Adjuster",         "order": 1000, "probability": 50,  "blueprint": "pre_production",       "high_level_stage": "Pre-Production",  "is_terminal": false, "insurance_only": true },
+  { "v": 0, "name": "Adjuster Appointment Complete","order": 1100, "probability": 55,  "blueprint": "pre_production",       "high_level_stage": "Pre-Production",  "is_terminal": false, "insurance_only": true },
+  { "v": 0, "name": "Waiting Claim",               "order": 1200, "probability": 55,  "blueprint": "pre_production",       "high_level_stage": "Pre-Production",  "is_terminal": false, "insurance_only": true },
+  { "v": 0, "name": "Claim Approved",              "order": 1300, "probability": 65,  "blueprint": "pre_production",       "high_level_stage": "Pre-Production",  "is_terminal": false, "insurance_only": true },
+  { "v": 0, "name": "Waiting Claim Summary",       "order": 1350, "probability": 65,  "blueprint": "pre_production",       "high_level_stage": "Pre-Production",  "is_terminal": false, "insurance_only": true },
+  { "v": 0, "name": "Supplementing",               "order": 1400, "probability": 65,  "blueprint": "pre_production",       "high_level_stage": "Pre-Production",  "is_terminal": false, "insurance_only": true },
+  { "v": 0, "name": "Waiting Customer Deposit",    "order": 1500, "probability": 70,  "blueprint": "pre_production",       "high_level_stage": "Pre-Production",  "is_terminal": false, "insurance_only": false },
+  { "v": 0, "name": "Investment",                  "order": 1600, "probability": 75,  "blueprint": "pre_production",       "high_level_stage": "Pre-Production",  "is_terminal": false, "insurance_only": false },
+  { "v": 0, "name": "Preparing Production Documents","order": 1700,"probability": 75,  "blueprint": "pre_production",       "high_level_stage": "Pre-Production",  "is_terminal": false, "insurance_only": false },
+  { "v": 0, "name": "Stage 1 Review",              "order": 1800, "probability": 80,  "blueprint": "pre_production",       "high_level_stage": "Pre-Production",  "is_terminal": false, "insurance_only": false },
+  { "v": 0, "name": "Stage 1 Rejected",            "order": 1850, "probability": 75,  "blueprint": "pre_production",       "high_level_stage": "Pre-Production",  "is_terminal": false, "insurance_only": false },
+  { "v": 0, "name": "Additional Items Required",   "order": 1860, "probability": 80,  "blueprint": "pre_production",       "high_level_stage": "Pre-Production",  "is_terminal": false, "insurance_only": false },
+  { "v": 0, "name": "Job Ready for Production",    "order": 1900, "probability": 85,  "blueprint": "pre_production",       "high_level_stage": "Production",      "is_terminal": false, "insurance_only": false },
+  { "v": 0, "name": "Scheduled",                   "order": 2000, "probability": 85,  "blueprint": "pre_production",       "high_level_stage": "Production",      "is_terminal": false, "insurance_only": false },
+  { "v": 0, "name": "On Hold",                     "order": 2050, "probability": 80,  "blueprint": "pre_production",       "high_level_stage": "Production",      "is_terminal": false, "insurance_only": false },
+  { "v": 0, "name": "Work in Progress",            "order": 2100, "probability": 90,  "blueprint": "pre_production",       "high_level_stage": "Production",      "is_terminal": false, "insurance_only": false },
+  { "v": 0, "name": "Project Completed",           "order": 2200, "probability": 95,  "blueprint": "post_production",      "high_level_stage": "Post-Production", "is_terminal": false, "insurance_only": false },
+  { "v": 0, "name": "Post Build Supplement",       "order": 2250, "probability": 90,  "blueprint": "post_production",      "high_level_stage": "Post-Production", "is_terminal": false, "insurance_only": true },
+  { "v": 0, "name": "Depreciation Submitted",      "order": 2300, "probability": 95,  "blueprint": "post_production",      "high_level_stage": "Post-Production", "is_terminal": false, "insurance_only": true },
+  { "v": 0, "name": "Waiting on Depreciation",     "order": 2400, "probability": 95,  "blueprint": "post_production",      "high_level_stage": "Post-Production", "is_terminal": false, "insurance_only": true },
+  { "v": 0, "name": "Depreciation Released",       "order": 2500, "probability": 95,  "blueprint": "post_production",      "high_level_stage": "Post-Production", "is_terminal": false, "insurance_only": true },
+  { "v": 0, "name": "Sales Final Visit",           "order": 2600, "probability": 95,  "blueprint": "post_production",      "high_level_stage": "Post-Production", "is_terminal": false, "insurance_only": false },
+  { "v": 0, "name": "Awaiting Final Payment",      "order": 2700, "probability": 95,  "blueprint": "post_production",      "high_level_stage": "Post-Production", "is_terminal": false, "insurance_only": false },
+  { "v": 0, "name": "Ready for Final Email",       "order": 2800, "probability": 98,  "blueprint": "post_production",      "high_level_stage": "Post-Production", "is_terminal": false, "insurance_only": false },
+  { "v": 0, "name": "Ready for Commission and Final Checklist", "order": 2900, "probability": 99, "blueprint": "post_production", "high_level_stage": "Post-Production", "is_terminal": false, "insurance_only": false },
+  { "v": 0, "name": "Closed PIF",                  "order": 3000, "probability": 100, "blueprint": "post_production",      "high_level_stage": "Closed",          "is_terminal": true,  "insurance_only": false },
+  { "v": 0, "name": "Lost Deal",                   "order": 9000, "probability": 0,   "blueprint": null,                   "high_level_stage": "Closed",          "is_terminal": true,  "insurance_only": false },
+  { "v": 0, "name": "Exit",                        "order": 9100, "probability": 0,   "blueprint": null,                   "high_level_stage": "Closed",          "is_terminal": true,  "insurance_only": false }
 ]
