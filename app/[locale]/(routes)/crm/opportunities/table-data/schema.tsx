@@ -5,10 +5,10 @@ import { z } from "zod";
 export const opportunitySchema = z.object({
   //TODO: fix all the types and nullable
   id: z.string(),
-  name: z.string(),
-  description: z.string(),
+  name: z.string().nullable(),
+  description: z.string().nullable(),
   next_step: z.string().nullable(),
-  close_date: z.date(),
+  close_date: z.date().nullable(),
   status: z.string().nullable(),
   budget: z.union([z.number(), z.bigint()]).nullable().transform((val) =>
     typeof val === 'bigint' ? Number(val) : val
