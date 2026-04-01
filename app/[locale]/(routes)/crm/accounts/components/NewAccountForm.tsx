@@ -24,7 +24,7 @@ import {
 } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
+import { Separator } from "@/components/ui/separator";
 import { UserSearchCombobox } from "@/components/ui/user-search-combobox";
 import { createAccount } from "@/actions/crm/accounts/create-account";
 
@@ -33,45 +33,62 @@ type Props = {
   onFinish: () => void;
 };
 
+const formSchema = z.object({
+  // Required
+  name: z.string().min(1, "Customer name is required").max(100),
+  billing_street: z.string().min(1, "Billing address is required"),
+  billing_city: z.string().min(1, "City is required"),
+  billing_state: z.string().min(1, "State is required"),
+  billing_postal_code: z.string().min(1, "ZIP is required"),
+  type: z.string().min(1, "Type is required"),
+
+  // Optional
+  office_phone: z.string().optional(),
+  email: z.string().email("Please enter a valid email").optional().or(z.literal("")),
+  assigned_to: z.string().optional(),
+  shipping_street: z.string().optional(),
+  shipping_city: z.string().optional(),
+  shipping_state: z.string().optional(),
+  shipping_postal_code: z.string().optional(),
+});
+
+type FormValues = z.infer<typeof formSchema>;
+
 export function NewAccountForm({ industries, onFinish }: Props) {
   const t = useTranslations("CrmAccountForm");
   const c = useTranslations("Common");
 
-  const formSchema = z.object({
-    name: z.string().min(1, t("nameRequired")).max(100),
-    office_phone: z.string().optional(),
-    website: z.string().optional(),
-    fax: z.string().optional(),
-    company_id: z.string().min(5).max(10),
-    vat: z.string().max(20).optional(),
-    email: z.string().email(t("emailInvalid")),
-    billing_street: z.string().min(3).max(50),
-    billing_postal_code: z.string().min(2).max(10),
-    billing_city: z.string().min(3).max(50),
-    billing_state: z.string().min(3).max(50).optional(),
-    billing_country: z.string().min(3).max(50),
-    shipping_street: z.string().optional(),
-    shipping_postal_code: z.string().optional(),
-    shipping_city: z.string().optional(),
-    shipping_state: z.string().optional(),
-    shipping_country: z.string().optional(),
-    description: z.string().min(3).max(1000).optional(),
-    assigned_to: z.string().min(3).max(50),
-    status: z.string().min(3).max(50).optional(),
-    annual_revenue: z.string().min(3).max(50).optional(),
-    member_of: z.string().min(3).max(50).optional(),
-    industry: z.string().min(3).max(50),
-  });
-
-  type NewAccountFormValues = z.infer<typeof formSchema>;
-
-  const form = useForm<NewAccountFormValues>({
+  const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
     mode: "onBlur",
+    defaultValues: {
+      type: "Individual",
+      billing_state: "CO",
+      billing_postal_code: "",
+    },
   });
 
-  const onSubmit = async (data: NewAccountFormValues) => {
-    const result = await createAccount(data);
+  const onSubmit = async (data: FormValues) => {
+    // Map type to the industry/status field the existing action expects
+    const payload: Record<string, string | undefined> = {
+      name: data.name,
+      office_phone: data.office_phone || undefined,
+      email: data.email || undefined,
+      billing_street: data.billing_street,
+      billing_city: data.billing_city,
+      billing_state: data.billing_state,
+      billing_postal_code: data.billing_postal_code,
+      billing_country: "US",
+      shipping_street: data.shipping_street || undefined,
+      shipping_city: data.shipping_city || undefined,
+      shipping_state: data.shipping_state || undefined,
+      shipping_postal_code: data.shipping_postal_code || undefined,
+      assigned_to: data.assigned_to || undefined,
+      status: "Active",
+      description: `Type: ${data.type}`,
+    };
+
+    const result = await createAccount(payload as any);
     if (result?.error) {
       form.setError("root.serverError", { message: result.error });
     } else {
@@ -83,19 +100,23 @@ export function NewAccountForm({ industries, onFinish }: Props) {
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="h-full px-4 md:px-10">
-        <div className="w-full text-sm">
-          <div className="pb-5 space-y-2">
+      <form onSubmit={form.handleSubmit(onSubmit)} className="h-full px-4 md:px-10 overflow-y-auto">
+        <div className="w-full text-sm space-y-6">
+
+          {/* ── Required Fields ─────────────────── */}
+          <div className="space-y-3">
+            <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Required</p>
+
             <FormField
               control={form.control}
               name="name"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>{t("accountName")}</FormLabel>
+                  <FormLabel>{t("accountName")} <span className="text-destructive">*</span></FormLabel>
                   <FormControl>
                     <Input
                       disabled={form.formState.isSubmitting}
-                      placeholder="NextCRM Inc."
+                      placeholder="Mike Arvizu"
                       {...field}
                     />
                   </FormControl>
@@ -103,104 +124,40 @@ export function NewAccountForm({ industries, onFinish }: Props) {
                 </FormItem>
               )}
             />
+
             <FormField
               control={form.control}
-              name="office_phone"
+              name="type"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>{t("officePhone")}</FormLabel>
-                  <FormControl>
-                    <Input
-                      disabled={form.formState.isSubmitting}
-                      placeholder="+420 ...."
-                      {...field}
-                    />
-                  </FormControl>
+                  <FormLabel>Type <span className="text-destructive">*</span></FormLabel>
+                  <Select onValueChange={field.onChange} defaultValue={field.value}>
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select type" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      <SelectItem value="Individual">Individual</SelectItem>
+                      <SelectItem value="Business">Business</SelectItem>
+                    </SelectContent>
+                  </Select>
                   <FormMessage />
                 </FormItem>
               )}
             />
-            <FormField
-              control={form.control}
-              name="email"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>{t("email")}</FormLabel>
-                  <FormControl>
-                    <Input
-                      disabled={form.formState.isSubmitting}
-                      placeholder="account@domain.com"
-                      {...field}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="website"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>{t("website")}</FormLabel>
-                  <FormControl>
-                    <Input
-                      disabled={form.formState.isSubmitting}
-                      placeholder="https://www.domain.com"
-                      {...field}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="company_id"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>{t("accountId")}</FormLabel>
-                  <FormControl>
-                    <Input
-                      disabled={form.formState.isSubmitting}
-                      placeholder="1234567890"
-                      {...field}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="vat"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>{t("vatNumber")}</FormLabel>
-                  <FormControl>
-                    <Input
-                      disabled={form.formState.isSubmitting}
-                      placeholder="CZ1234567890"
-                      {...field}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pb-5">
+
             <div className="space-y-2">
+              <p className="text-sm font-medium">Billing Address <span className="text-destructive">*</span></p>
               <FormField
                 control={form.control}
                 name="billing_street"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>{t("billingStreet")}</FormLabel>
                     <FormControl>
                       <Input
                         disabled={form.formState.isSubmitting}
-                        placeholder="Švábova 772/18"
+                        placeholder="1234 Main St"
                         {...field}
                       />
                     </FormControl>
@@ -208,82 +165,131 @@ export function NewAccountForm({ industries, onFinish }: Props) {
                   </FormItem>
                 )}
               />
-              <FormField
-                control={form.control}
-                name="billing_postal_code"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>{t("billingPostalCode")}</FormLabel>
-                    <FormControl>
-                      <Input
-                        disabled={form.formState.isSubmitting}
-                        placeholder="252 18"
-                        {...field}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="billing_city"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>{t("billingCity")}</FormLabel>
-                    <FormControl>
-                      <Input
-                        disabled={form.formState.isSubmitting}
-                        placeholder="Prague"
-                        {...field}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="billing_state"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>{t("billingState")}</FormLabel>
-                    <FormControl>
-                      <Input disabled={form.formState.isSubmitting} placeholder="" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="billing_country"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>{t("billingCountry")}</FormLabel>
-                    <FormControl>
-                      <Input
-                        disabled={form.formState.isSubmitting}
-                        placeholder="Czechia"
-                        {...field}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+              <div className="grid grid-cols-3 gap-2">
+                <FormField
+                  control={form.control}
+                  name="billing_city"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormControl>
+                        <Input
+                          disabled={form.formState.isSubmitting}
+                          placeholder="City"
+                          {...field}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="billing_state"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormControl>
+                        <Input
+                          disabled={form.formState.isSubmitting}
+                          placeholder="State"
+                          {...field}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="billing_postal_code"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormControl>
+                        <Input
+                          disabled={form.formState.isSubmitting}
+                          placeholder="ZIP"
+                          {...field}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
             </div>
+          </div>
+
+          <Separator />
+
+          {/* ── Optional Fields ─────────────────── */}
+          <div className="space-y-3">
+            <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Optional</p>
+
+            <FormField
+              control={form.control}
+              name="office_phone"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Phone</FormLabel>
+                  <FormControl>
+                    <Input
+                      disabled={form.formState.isSubmitting}
+                      placeholder="(719) 555-0198"
+                      {...field}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="email"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Email</FormLabel>
+                  <FormControl>
+                    <Input
+                      disabled={form.formState.isSubmitting}
+                      placeholder="customer@email.com"
+                      {...field}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="assigned_to"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Owner</FormLabel>
+                  <FormControl>
+                    <UserSearchCombobox
+                      value={field.value ?? ""}
+                      onChange={field.onChange}
+                      placeholder={c("selectUser")}
+                      disabled={form.formState.isSubmitting}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
             <div className="space-y-2">
+              <p className="text-sm font-medium">Shipping Address</p>
               <FormField
                 control={form.control}
                 name="shipping_street"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>{t("shippingStreet")}</FormLabel>
                     <FormControl>
                       <Input
                         disabled={form.formState.isSubmitting}
-                        placeholder="Švábova 772/18"
+                        placeholder="Street"
                         {...field}
                       />
                     </FormControl>
@@ -291,175 +297,60 @@ export function NewAccountForm({ industries, onFinish }: Props) {
                   </FormItem>
                 )}
               />
-              <FormField
-                control={form.control}
-                name="shipping_postal_code"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>{t("shippingPostalCode")}</FormLabel>
-                    <FormControl>
-                      <Input
-                        disabled={form.formState.isSubmitting}
-                        placeholder="252 18"
-                        {...field}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="shipping_city"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>{t("shippingCity")}</FormLabel>
-                    <FormControl>
-                      <Input
-                        disabled={form.formState.isSubmitting}
-                        placeholder="Prague"
-                        {...field}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="shipping_state"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>{t("shippingState")}</FormLabel>
-                    <FormControl>
-                      <Input disabled={form.formState.isSubmitting} placeholder="" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="shipping_country"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>{t("shippingCountry")}</FormLabel>
-                    <FormControl>
-                      <Input
-                        disabled={form.formState.isSubmitting}
-                        placeholder="Czechia"
-                        {...field}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pb-5">
-            <div className="space-y-2">
-              <FormField
-                control={form.control}
-                name="description"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>{c("description")}</FormLabel>
-                    <FormControl>
-                      <Textarea
-                        disabled={form.formState.isSubmitting}
-                        placeholder="Description"
-                        {...field}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
-            <div className="space-y-2">
-              <FormField
-                control={form.control}
-                name="annual_revenue"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>{t("annualRevenue")}</FormLabel>
-                    <FormControl>
-                      <Input
-                        disabled={form.formState.isSubmitting}
-                        placeholder="1.0000.000"
-                        {...field}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="member_of"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>{t("isMemberOf")}</FormLabel>
-                    <FormControl>
-                      <Input
-                        disabled={form.formState.isSubmitting}
-                        placeholder="Tesla Inc."
-                        {...field}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="industry"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>{t("industry")}</FormLabel>
-                    <Select
-                      onValueChange={field.onChange}
-                      defaultValue={field.value}
-                    >
+              <div className="grid grid-cols-3 gap-2">
+                <FormField
+                  control={form.control}
+                  name="shipping_city"
+                  render={({ field }) => (
+                    <FormItem>
                       <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder={t("industryPlaceholder")} />
-                        </SelectTrigger>
+                        <Input
+                          disabled={form.formState.isSubmitting}
+                          placeholder="City"
+                          {...field}
+                        />
                       </FormControl>
-                      <SelectContent className="flex overflow-y-auto h-56">
-                        {industries.map((industry) => (
-                          <SelectItem key={industry.id} value={industry.id}>
-                            {industry.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="assigned_to"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>{c("assignedTo")}</FormLabel>
-                    <FormControl>
-                      <UserSearchCombobox
-                        value={field.value ?? ""}
-                        onChange={field.onChange}
-                        placeholder={c("selectUser")}
-                        disabled={form.formState.isSubmitting}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="shipping_state"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormControl>
+                        <Input
+                          disabled={form.formState.isSubmitting}
+                          placeholder="State"
+                          {...field}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="shipping_postal_code"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormControl>
+                        <Input
+                          disabled={form.formState.isSubmitting}
+                          placeholder="ZIP"
+                          {...field}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
             </div>
           </div>
         </div>
+
         <div className="grid gap-2 py-5">
           {form.formState.errors.root?.serverError && (
             <p className="text-sm text-destructive" aria-live="polite">
