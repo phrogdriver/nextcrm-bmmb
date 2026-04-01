@@ -114,10 +114,58 @@ function CustomerCard({ job }: { job: Job }) {
     office_phone: string | null;
   }>;
   const account = job.assigned_account;
+  const isLocked = !!account; // once set, can't change
+
+  const [open, setOpen] = useState(false);
+  const [mode, setMode] = useState<"search" | "create">("search");
+  const [query, setQuery] = useState("");
+  const [results, setResults] = useState<Array<{ id: string; name: string }>>([]);
+  const [searching, setSearching] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [newName, setNewName] = useState("");
+  const router = useRouter();
+
+  const handleSearch = async () => {
+    if (query.length < 2) return;
+    setSearching(true);
+    const { searchAccounts } = await import("@/actions/crm/accounts/search-accounts");
+    const result = await searchAccounts({ search: query });
+    setResults(result.accounts);
+    setSearching(false);
+  };
+
+  const handleLink = async (accountId: string) => {
+    setSaving(true);
+    const { linkAccountToJob } = await import("@/actions/crm/accounts/link-account-to-job");
+    const result = await linkAccountToJob(accountId, job.id);
+    setSaving(false);
+    if (!result.error) {
+      setOpen(false);
+      router.refresh();
+    }
+  };
+
+  const handleCreate = async () => {
+    if (!newName.trim()) return;
+    setSaving(true);
+    const { createAccount } = await import("@/actions/crm/accounts/create-account");
+    const result = await createAccount({ name: newName.trim() });
+    if (result.data) {
+      const { linkAccountToJob } = await import("@/actions/crm/accounts/link-account-to-job");
+      await linkAccountToJob(result.data.id, job.id);
+    }
+    setSaving(false);
+    setOpen(false);
+    router.refresh();
+  };
 
   return (
     <>
-      <SidebarCard icon={User} title="Customer">
+      <SidebarCard
+        icon={User}
+        title="Customer"
+        onEdit={isLocked ? undefined : () => setOpen(true)}
+      >
         <div className="space-y-3">
           {/* Account */}
           {account && (
@@ -169,6 +217,78 @@ function CustomerCard({ job }: { job: Job }) {
           ) : null}
         </div>
       </SidebarCard>
+
+      {/* Search / Create sheet — only available when no account set */}
+      <Sheet open={open} onOpenChange={setOpen}>
+        <SheetContent className="sm:max-w-md overflow-y-auto">
+          <SheetHeader>
+            <SheetTitle>
+              {mode === "create" ? "New Customer" : "Assign Customer"}
+            </SheetTitle>
+          </SheetHeader>
+
+          {mode === "search" && (
+            <div className="space-y-4 mt-6">
+              <div className="flex gap-2">
+                <Input
+                  placeholder="Search by name..."
+                  value={query}
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => setQuery(e.target.value)}
+                  onKeyDown={(e: React.KeyboardEvent) => e.key === "Enter" && handleSearch()}
+                />
+                <Button onClick={handleSearch} disabled={searching} size="sm">
+                  {searching ? "..." : "Search"}
+                </Button>
+              </div>
+              {results.length > 0 && (
+                <div className="space-y-1">
+                  {results.map((a) => (
+                    <button
+                      key={a.id}
+                      className="w-full text-left px-3 py-2 rounded-md hover:bg-muted/50 transition-colors"
+                      onClick={() => handleLink(a.id)}
+                      disabled={saving}
+                    >
+                      <p className="text-sm font-medium">{a.name}</p>
+                    </button>
+                  ))}
+                </div>
+              )}
+              {results.length === 0 && query.length >= 2 && !searching && (
+                <p className="text-sm text-muted-foreground">No accounts found.</p>
+              )}
+              <Button
+                variant="outline"
+                className="w-full"
+                onClick={() => { setMode("create"); setNewName(query); }}
+              >
+                + Create New Customer
+              </Button>
+            </div>
+          )}
+
+          {mode === "create" && (
+            <div className="space-y-4 mt-6">
+              <div className="space-y-1.5">
+                <Label htmlFor="account-name">Customer Name <span className="text-destructive">*</span></Label>
+                <Input
+                  id="account-name"
+                  value={newName}
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => setNewName(e.target.value)}
+                />
+              </div>
+              <div className="flex justify-end gap-2 pt-4">
+                <Button variant="outline" onClick={() => setMode("search")} disabled={saving}>
+                  Back
+                </Button>
+                <Button onClick={handleCreate} disabled={saving || !newName.trim()}>
+                  {saving ? "Creating..." : "Create & Assign"}
+                </Button>
+              </div>
+            </div>
+          )}
+        </SheetContent>
+      </Sheet>
     </>
   );
 }
