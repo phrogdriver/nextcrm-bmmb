@@ -34,7 +34,7 @@ const OpportunityView = async (
   );
   const guidance = currentStage
     ? getStageGuidance(currentStage.name) ?? null
-    : null;
+    : getStageGuidance("Claim Approved") ?? null; // Mock fallback for demo
 
   const isAdmin = session?.user?.isAdmin ?? false;
 
