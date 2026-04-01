@@ -15,27 +15,38 @@ interface JobHeaderProps {
   onLogNote: () => void;
 }
 
+// Mock fallbacks for demo — remove when real data is populated
+const MOCK = {
+  customerName: "Mike Arvizu",
+  address: "1234 Main St, Colorado Springs",
+  pm: "Jackson Coffin",
+  stageName: "Claim Approved",
+  isInsurance: true,
+  daysInStage: 12,
+  jobNumber: "23339",
+};
+
 export function JobHeader({ job, stages, onTransition, onLogNote }: JobHeaderProps) {
   const router = useRouter();
 
   const contact = job.contacts?.[0]?.contact;
   const customerName = contact
     ? `${contact.first_name} ${contact.last_name}`
-    : job.assigned_account?.name ?? "—";
+    : job.assigned_account?.name || MOCK.customerName;
 
   const property = job.assigned_property;
   const address = property
     ? `${property.address}${property.city ? `, ${property.city}` : ""}`
-    : null;
+    : MOCK.address;
 
   const currentStage = stages.find((s) => s.id === job.sales_stage) ?? null;
-  const isInsurance = job.payor_type === "INSURANCE";
+  const isInsurance = job.payor_type === "INSURANCE" || (!job.payor_type && MOCK.isInsurance);
 
   // Days in current stage
   const lastTransition = job.stage_transitions?.[0];
   const daysInStage = lastTransition
     ? differenceInDays(new Date(), new Date(lastTransition.transitioned_at))
-    : null;
+    : MOCK.daysInStage;
 
   return (
     <div className="sticky top-0 z-30 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80 border-b">
@@ -56,7 +67,7 @@ export function JobHeader({ job, stages, onTransition, onLogNote }: JobHeaderPro
               {/* Job number + customer name */}
               <div className="flex items-center gap-2 flex-wrap">
                 <h1 className="text-lg font-semibold truncate">
-                  {job.job_number ? `Job #${job.job_number}` : job.name ?? "Untitled Job"}
+                  {job.job_number ? `Job #${job.job_number}` : job.name ? job.name : `Job #${MOCK.jobNumber}`}
                 </h1>
                 <span className="text-lg text-muted-foreground">·</span>
                 <span className="text-lg text-muted-foreground truncate">
@@ -66,12 +77,10 @@ export function JobHeader({ job, stages, onTransition, onLogNote }: JobHeaderPro
 
               {/* Second row: address, PM, badges */}
               <div className="flex items-center gap-3 flex-wrap mt-0.5 text-sm text-muted-foreground">
-                {address && <span>{address}</span>}
-                {job.assigned_to_user && (
-                  <span>
-                    PM: <span className="text-foreground">{job.assigned_to_user.name}</span>
-                  </span>
-                )}
+                <span>{address}</span>
+                <span>
+                  PM: <span className="text-foreground">{job.assigned_to_user?.name ?? MOCK.pm}</span>
+                </span>
               </div>
             </div>
           </div>
@@ -79,11 +88,9 @@ export function JobHeader({ job, stages, onTransition, onLogNote }: JobHeaderPro
           {/* Right side: badges + actions */}
           <div className="flex items-center gap-2 shrink-0 flex-wrap justify-end">
             {/* Stage badge */}
-            {currentStage && (
-              <Badge variant="secondary" className="whitespace-nowrap">
-                {currentStage.name}
-              </Badge>
-            )}
+            <Badge variant="secondary" className="whitespace-nowrap">
+              {currentStage?.name ?? MOCK.stageName}
+            </Badge>
 
             {/* Insurance badge */}
             {isInsurance && (
