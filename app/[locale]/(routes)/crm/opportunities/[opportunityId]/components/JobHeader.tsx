@@ -2,7 +2,7 @@
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { StickyNote, ArrowLeft, Shield, Clock } from "lucide-react";
+import { StickyNote, ArrowLeft, Shield, Clock, ChevronDown } from "lucide-react";
 import { type Job, type PipelineStage } from "@/actions/crm/get-job";
 import { SplitButton } from "./SplitButton";
 import { useRouter } from "next/navigation";
@@ -103,7 +103,7 @@ export function JobHeader({ job, stages, onTransition, onLogNote }: JobHeaderPro
             {/* Days in stage */}
             {daysInStage != null && daysInStage > 0 && (
               <Badge
-                variant={daysInStage > 14 ? "destructive" : "outline"}
+                variant={daysInStage > 7 ? "destructive" : "outline"}
                 className="whitespace-nowrap"
               >
                 <Clock className="h-3 w-3 mr-1" />
@@ -111,13 +111,24 @@ export function JobHeader({ job, stages, onTransition, onLogNote }: JobHeaderPro
               </Badge>
             )}
 
-            {/* Split button */}
-            <SplitButton
-              currentStage={currentStage}
-              stages={stages}
-              isInsurance={isInsurance}
-              onTransition={onTransition}
-            />
+            {/* Split button — mock fallback when no real stage */}
+            {currentStage ? (
+              <SplitButton
+                currentStage={currentStage}
+                stages={stages}
+                isInsurance={isInsurance}
+                onTransition={onTransition}
+              />
+            ) : (
+              <div className="flex items-stretch">
+                <Button size="sm" className="rounded-r-none">
+                  Mark {MOCK.stageName}
+                </Button>
+                <Button size="sm" className="rounded-l-none border-l border-l-primary-foreground/20 px-2">
+                  <ChevronDown className="h-4 w-4" />
+                </Button>
+              </div>
+            )}
 
             {/* Log note */}
             <Button variant="outline" size="sm" onClick={onLogNote}>
