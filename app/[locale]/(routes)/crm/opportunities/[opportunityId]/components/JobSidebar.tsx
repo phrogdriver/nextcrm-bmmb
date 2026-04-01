@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -167,11 +168,13 @@ function CustomerCard({ job }: { job: Job }) {
         onEdit={isLocked ? undefined : () => setOpen(true)}
       >
         <div className="space-y-3">
-          {/* Customer name */}
+          {/* Customer name — links to account detail */}
           {account && (
             <div>
               <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">Customer</p>
-              <p className="text-sm font-semibold">{account.name}</p>
+              <Link href={`/crm/accounts/${account.id}`} className="text-sm font-semibold text-primary hover:underline">
+                {account.name}
+              </Link>
             </div>
           )}
 
@@ -188,9 +191,9 @@ function CustomerCard({ job }: { job: Job }) {
               )}
               {contacts.map((contact) => (
                 <div key={contact.id} className="space-y-0.5">
-                  <p className="text-sm font-medium">
+                  <Link href={`/crm/contacts/${contact.id}`} className="text-sm font-medium text-primary hover:underline block">
                     {contact.first_name} {contact.last_name}
-                  </p>
+                  </Link>
                   {contact.mobile_phone && (
                     <a
                       href={`tel:${contact.mobile_phone}`}
@@ -396,15 +399,20 @@ function PropertyCard({ job }: { job: Job }) {
       <SidebarCard icon={Home} title="Property" onEdit={openEdit}>
         {prop ? (
           <div className="space-y-2">
-            <div className="flex items-start gap-1.5">
-              <MapPin className="h-3.5 w-3.5 mt-0.5 text-muted-foreground shrink-0" />
-              <p className="text-sm">
+            <a
+              href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent([prop.address, prop.city, prop.state, prop.zip].filter(Boolean).join(", "))}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-start gap-1.5 text-primary hover:underline"
+            >
+              <MapPin className="h-3.5 w-3.5 mt-0.5 shrink-0" />
+              <span className="text-sm">
                 {prop.address}
                 {prop.city && `, ${prop.city}`}
                 {prop.state && `, ${prop.state}`}
                 {prop.zip && ` ${prop.zip}`}
-              </p>
-            </div>
+              </span>
+            </a>
             {prop.property_type && (
               <div className="space-y-0.5">
                 <p className="text-muted-foreground text-xs">Type</p>
