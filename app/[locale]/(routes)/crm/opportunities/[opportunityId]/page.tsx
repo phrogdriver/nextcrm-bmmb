@@ -18,18 +18,15 @@ const OpportunityView = async (
   const params = await props.params;
   const { opportunityId } = params;
 
-  const [job, stages, session] = await Promise.all([
-    getJob(opportunityId),
-    getAllStages(),
-    getServerSession(authOptions),
-  ]);
+  // Sequential fetches to avoid exhausting the Supabase connection pool
+  const session = await getServerSession(authOptions);
+  const job = await getJob(opportunityId);
 
   if (!job) return <div>Job not found</div>;
 
-  const [initialActivities, auditLog] = await Promise.all([
-    getActivitiesByEntity("opportunity", opportunityId),
-    getAuditLogByEntity("opportunity", opportunityId),
-  ]);
+  const stages = await getAllStages();
+  const initialActivities = await getActivitiesByEntity("opportunity", opportunityId);
+  const auditLog = await getAuditLogByEntity("opportunity", opportunityId);
 
   // Look up guidance for the current stage
   const currentStage = stages.find(
