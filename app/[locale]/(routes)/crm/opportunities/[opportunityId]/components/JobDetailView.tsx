@@ -162,7 +162,7 @@ export function JobDetailView({
             {/* Sidebar (sticky on desktop) */}
             <div className="w-full lg:w-80 xl:w-96 shrink-0">
               <div className="lg:sticky lg:top-0">
-                <JobSidebar job={job} />
+                <JobSidebar job={job} isAdmin={isAdmin} />
               </div>
             </div>
           </div>

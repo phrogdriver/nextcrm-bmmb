@@ -534,25 +534,7 @@ function PropertyCard({ job }: { job: Job }) {
 // ── Financials Card ──────────────────────────────────────────
 
 function FinancialsCard({ job }: { job: Job }) {
-  const [editing, setEditing] = useState(false);
-
-  const fields: FieldDef[] = [
-    { key: "estimated_total", label: "Estimated Total", type: "number" },
-    { key: "budgeted_amount", label: "Budgeted Amount", type: "number" },
-    { key: "budgeted_labor", label: "Budgeted Labor", type: "number" },
-    { key: "budgeted_materials", label: "Budgeted Materials", type: "number" },
-    { key: "total_expenses", label: "Total Expenses", type: "number" },
-    { key: "payments_received", label: "Payments Received", type: "number" },
-    { key: "overhead", label: "Overhead", type: "number" },
-    { key: "overhead_percentage", label: "Overhead %", type: "number" },
-    { key: "commission_percentage", label: "Commission %", type: "number" },
-    { key: "commission", label: "Commission", type: "number" },
-  ];
-
-  const initialValues: Record<string, string> = {};
-  for (const f of fields) {
-    initialValues[f.key] = str((job as any)[f.key]);
-  }
+  // Financials are calculated/derived — no direct edit
 
   const rows = ([
     ["Estimated Total", fmtCurrency(job.estimated_total)] as const,
@@ -569,36 +551,26 @@ function FinancialsCard({ job }: { job: Job }) {
   ]).filter(([_, v]) => v !== "—");
 
   return (
-    <>
-      <SidebarCard icon={DollarSign} title="Financials" onEdit={() => setEditing(true)}>
-        {rows.length === 0 ? (
-          <p className="text-sm text-muted-foreground">No financial data yet</p>
-        ) : (
-          <div className="space-y-2">
-            {rows.map(([label, value]) => (
-              <div key={label} className="flex justify-between text-sm">
-                <span className="text-muted-foreground">{label}</span>
-                <span className="font-mono font-medium">{value}</span>
-              </div>
-            ))}
-          </div>
-        )}
-      </SidebarCard>
-      <EditSheet
-        open={editing}
-        onOpenChange={setEditing}
-        title="Edit Financials"
-        jobId={job.id}
-        fields={fields}
-        initialValues={initialValues}
-      />
-    </>
+    <SidebarCard icon={DollarSign} title="Financials">
+      {rows.length === 0 ? (
+        <p className="text-sm text-muted-foreground">No financial data yet</p>
+      ) : (
+        <div className="space-y-2">
+          {rows.map(([label, value]) => (
+            <div key={label} className="flex justify-between text-sm">
+              <span className="text-muted-foreground">{label}</span>
+              <span className="font-mono font-medium">{value}</span>
+            </div>
+          ))}
+        </div>
+      )}
+    </SidebarCard>
   );
 }
 
 // ── Key Dates Card ───────────────────────────────────────────
 
-function DatesCard({ job }: { job: Job }) {
+function DatesCard({ job, isAdmin }: { job: Job; isAdmin: boolean }) {
   const [editing, setEditing] = useState(false);
 
   const fields: FieldDef[] = [
@@ -630,7 +602,7 @@ function DatesCard({ job }: { job: Job }) {
 
   return (
     <>
-      <SidebarCard icon={Calendar} title="Key Dates" onEdit={() => setEditing(true)}>
+      <SidebarCard icon={Calendar} title="Key Dates" onEdit={isAdmin ? () => setEditing(true) : undefined}>
         {dates.length === 0 ? (
           <p className="text-sm text-muted-foreground">No dates recorded yet</p>
         ) : (
@@ -840,15 +812,16 @@ function AdditionalInfoCard({ job }: { job: Job }) {
 
 interface JobSidebarProps {
   job: Job;
+  isAdmin?: boolean;
 }
 
-export function JobSidebar({ job }: JobSidebarProps) {
+export function JobSidebar({ job, isAdmin = false }: JobSidebarProps) {
   return (
     <div className="space-y-4">
       <CustomerCard job={job} />
       <PropertyCard job={job} />
       <FinancialsCard job={job} />
-      <DatesCard job={job} />
+      <DatesCard job={job} isAdmin={isAdmin} />
       <TeamCard job={job} />
       <AdditionalInfoCard job={job} />
     </div>
