@@ -77,7 +77,7 @@ export const createColumns = (config: OpportunityConfig): ColumnDef<Opportunity>
   {
     accessorKey: "assigned_account",
     header: ({ column }) => (
-      <DataTableColumnHeader column={column} title="Assigned account" />
+      <DataTableColumnHeader column={column} title="Customer" />
     ),
 
     cell: ({ row }) => (

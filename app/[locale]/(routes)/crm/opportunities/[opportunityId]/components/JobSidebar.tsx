@@ -167,10 +167,10 @@ function CustomerCard({ job }: { job: Job }) {
         onEdit={isLocked ? undefined : () => setOpen(true)}
       >
         <div className="space-y-3">
-          {/* Account */}
+          {/* Customer name */}
           {account && (
             <div>
-              <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">Account</p>
+              <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">Customer</p>
               <p className="text-sm font-semibold">{account.name}</p>
             </div>
           )}

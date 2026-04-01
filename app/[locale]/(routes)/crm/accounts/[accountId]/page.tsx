@@ -52,12 +52,12 @@ const AccountDetailPage = async (props: AccountDetailPageProps) => {
   const tasks: crm_Accounts_Tasks[] = await getAccountsTasks(accountId);
   const crmData = await getAllCrmData();
 
-  if (!account) return <div>Account not found</div>;
+  if (!account) return <div>Customer not found</div>;
 
   return (
     <Container
-      title={`Account: ${account?.name}`}
-      description={"Everything you need to know about sales potential"}
+      title={`Customer: ${account?.name}`}
+      description={"Customer details and related records"}
     >
       <Tabs defaultValue="overview">
         <TabsList>

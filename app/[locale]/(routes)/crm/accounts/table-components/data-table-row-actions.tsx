@@ -53,10 +53,10 @@ export function DataTableRowActions<TData>({
       if (result.error) {
         toast.error(result.error);
       } else {
-        toast.success("Account has been deleted");
+        toast.success("Customer has been deleted");
       }
     } catch (error) {
-      toast.error("Something went wrong while deleting account. Please try again.");
+      toast.error("Something went wrong. Please try again.");
     } finally {
       setLoading(false);
       setOpen(false);
@@ -71,7 +71,7 @@ export function DataTableRowActions<TData>({
       if (result.error) {
         toast.error("Error");
       } else {
-        toast.success(`You are now Account: ${account.name}, watcher`);
+        toast.success(`Now watching: ${account.name}`);
       }
     } catch (error) {
       toast.error("Error");
@@ -88,7 +88,7 @@ export function DataTableRowActions<TData>({
       if (result.error) {
         toast.error("Error");
       } else {
-        toast.success(`You are no longer Account: ${account.name}, watcher`);
+        toast.success(`No longer watching: ${account.name}`);
       }
     } catch (error) {
       toast.error("Error");
