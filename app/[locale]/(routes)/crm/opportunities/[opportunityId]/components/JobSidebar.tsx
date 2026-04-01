@@ -15,6 +15,7 @@ import {
   Camera,
   ExternalLink,
   Pencil,
+  Info,
 } from "lucide-react";
 import { type Job } from "@/actions/crm/get-job";
 import { format } from "date-fns";
@@ -403,6 +404,75 @@ function TeamCard({ job }: { job: Job }) {
   );
 }
 
+// ── Additional Info Card ─────────────────────────────────────
+
+function AdditionalInfoCard({ job }: { job: Job }) {
+  const [editing, setEditing] = useState(false);
+
+  const fields: FieldDef[] = [
+    { key: "job_number", label: "Job Number", type: "text" },
+    { key: "name", label: "Job Name", type: "text" },
+    {
+      key: "payor_type",
+      label: "Payor Type",
+      type: "select",
+      options: [
+        { value: "INSURANCE", label: "Insurance" },
+        { value: "CASH_RETAIL", label: "Cash / Retail" },
+      ],
+    },
+    { key: "project_type", label: "Project Type", type: "text", placeholder: "Roof Replacement, Repair, etc." },
+    { key: "property_type", label: "Property Type", type: "text", placeholder: "Residential, Commercial" },
+    { key: "roof_type", label: "Roof Type", type: "text", placeholder: "Asphalt, Metal, Tile, etc." },
+    { key: "primary_lead_source", label: "Primary Lead Source", type: "text" },
+    { key: "secondary_lead_source", label: "Secondary Lead Source", type: "text" },
+    { key: "territory", label: "Territory", type: "text" },
+    { key: "description", label: "Notes / Description", type: "textarea" },
+  ];
+
+  const initialValues: Record<string, string> = {};
+  for (const f of fields) {
+    initialValues[f.key] = str((job as any)[f.key]);
+  }
+
+  const infoRows = ([
+    ["Job Number", job.job_number] as const,
+    ["Payor Type", job.payor_type === "INSURANCE" ? "Insurance" : job.payor_type === "CASH_RETAIL" ? "Cash / Retail" : null] as const,
+    ["Project Type", job.project_type] as const,
+    ["Property Type", job.property_type] as const,
+    ["Roof Type", job.roof_type] as const,
+    ["Lead Source", job.primary_lead_source] as const,
+    ["Territory", job.territory] as const,
+  ]).filter(([_, v]) => v != null && v !== "");
+
+  return (
+    <>
+      <SidebarCard icon={Info} title="Additional Info" onEdit={() => setEditing(true)}>
+        {infoRows.length === 0 ? (
+          <p className="text-sm text-muted-foreground">No additional info yet — click edit to add</p>
+        ) : (
+          <div className="space-y-2">
+            {infoRows.map(([label, value]) => (
+              <div key={label} className="flex justify-between text-sm">
+                <span className="text-muted-foreground">{label}</span>
+                <span className="font-medium">{value}</span>
+              </div>
+            ))}
+          </div>
+        )}
+      </SidebarCard>
+      <EditSheet
+        open={editing}
+        onOpenChange={setEditing}
+        title="Edit Job Information"
+        jobId={job.id}
+        fields={fields}
+        initialValues={initialValues}
+      />
+    </>
+  );
+}
+
 // ── Main Sidebar ─────────────────────────────────────────────
 
 interface JobSidebarProps {
@@ -417,6 +487,7 @@ export function JobSidebar({ job }: JobSidebarProps) {
       <FinancialsCard job={job} />
       <DatesCard job={job} />
       <TeamCard job={job} />
+      <AdditionalInfoCard job={job} />
     </div>
   );
 }

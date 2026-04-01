@@ -64,21 +64,21 @@ export function JobHeader({ job, stages, onTransition, onLogNote }: JobHeaderPro
             </Button>
 
             <div className="min-w-0">
-              {/* Job number + customer name */}
-              <div className="flex items-center gap-2 flex-wrap">
-                <h1 className="text-lg font-semibold truncate">
+              {/* Job number + customer name — single line */}
+              <div className="flex items-baseline gap-2 truncate">
+                <h1 className="text-base font-semibold whitespace-nowrap">
                   {job.job_number ? `Job #${job.job_number}` : job.name ? job.name : `Job #${MOCK.jobNumber}`}
                 </h1>
-                <span className="text-lg text-muted-foreground">·</span>
-                <span className="text-lg text-muted-foreground truncate">
+                <span className="text-base text-muted-foreground">·</span>
+                <span className="text-base text-muted-foreground truncate">
                   {customerName}
                 </span>
               </div>
 
-              {/* Second row: address, PM, badges */}
-              <div className="flex items-center gap-3 flex-wrap mt-0.5 text-sm text-muted-foreground">
-                <span>{address}</span>
-                <span>
+              {/* Second row: address + PM — single line */}
+              <div className="flex items-center gap-2 text-xs text-muted-foreground truncate mt-0.5">
+                <span className="truncate">{address}</span>
+                <span className="whitespace-nowrap">
                   PM: <span className="text-foreground">{job.assigned_to_user?.name ?? MOCK.pm}</span>
                 </span>
               </div>
