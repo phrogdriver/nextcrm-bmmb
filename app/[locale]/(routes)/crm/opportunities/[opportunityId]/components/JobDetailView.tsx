@@ -27,7 +27,7 @@ import { MeasurementsCard } from "./MeasurementsCard";
 
 // Existing activity + audit components
 import { ActivitiesView } from "@/components/crm/activities/ActivitiesView";
-import { ActivityForm } from "@/components/crm/activities/ActivityForm";
+import { QuickNoteForm } from "./QuickNoteForm";
 import { AuditTimeline } from "@/components/crm/audit-log/Timeline";
 
 interface JobDetailViewProps {
@@ -72,10 +72,9 @@ export function JobDetailView({
     router.refresh();
   }, [router]);
 
-  const handleNoteSaved = useCallback((_activity: ActivityWithLinks) => {
+  const handleNoteClosed = useCallback(() => {
     setShowNoteForm(false);
-    router.refresh();
-  }, [router]);
+  }, []);
 
   return (
     <div className="flex flex-col h-full">
@@ -181,12 +180,11 @@ export function JobDetailView({
       />
 
       {/* Quick Note Sheet */}
-      <ActivityForm
+      <QuickNoteForm
         open={showNoteForm}
         onOpenChange={setShowNoteForm}
         entityType="opportunity"
         entityId={job.id}
-        onSaved={handleNoteSaved}
       />
     </div>
   );
