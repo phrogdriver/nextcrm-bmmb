@@ -94,11 +94,12 @@ export function StageProgressBar({
                   />
                   <span
                     className={cn(
-                      "text-[10px] font-medium leading-none hidden sm:block",
+                      "text-[10px] font-medium leading-none hidden sm:block truncate max-w-[72px] text-center",
                       group.status === "upcoming"
                         ? "text-muted-foreground"
                         : "text-foreground"
                     )}
+                    title={group.name}
                   >
                     {group.name}
                   </span>
