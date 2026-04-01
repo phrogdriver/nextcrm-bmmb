@@ -28,8 +28,11 @@ export const updateOpportunityFields = async (
 
     if (!before) return { error: "Job not found" };
 
+    // job_number and name are auto-generated and locked
+    const { job_number: _jn, name: _n, ...safeFields } = fields;
+
     const updateData: Record<string, unknown> = {
-      ...fields,
+      ...safeFields,
       updatedBy: userId,
     };
 

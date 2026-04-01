@@ -7,6 +7,27 @@ import sendEmail from "@/lib/sendmail";
 import { inngest } from "@/inngest/client";
 import { writeAuditLog } from "@/lib/audit-log";
 
+/**
+ * Generate the next job number, starting at 100.
+ * Finds the highest existing numeric job_number and increments.
+ */
+async function getNextJobNumber(): Promise<string> {
+  const result = await prismadb.crm_Opportunities.findMany({
+    where: { job_number: { not: null } },
+    select: { job_number: true },
+    orderBy: { createdAt: "desc" },
+    take: 100,
+  });
+
+  let max = 99; // start at 100
+  for (const r of result) {
+    const n = parseInt(r.job_number ?? "", 10);
+    if (!isNaN(n) && n > max) max = n;
+  }
+
+  return String(max + 1);
+}
+
 export const createOpportunity = async (data: {
   account?: string;
   assigned_to?: string;
@@ -43,6 +64,12 @@ export const createOpportunity = async (data: {
   } = data;
 
   try {
+    // Auto-assign job number
+    const jobNumber = await getNextJobNumber();
+
+    // Auto-generate job name: "JobNumber: CustomerName"
+    const jobName = `${jobNumber}: ${name}`;
+
     const opportunity = await prismadb.crm_Opportunities.create({
       data: {
         account: account || undefined,
@@ -57,7 +84,8 @@ export const createOpportunity = async (data: {
         currency: currency || undefined,
         description: description || undefined,
         expected_revenue: expected_revenue ? Number(expected_revenue) : undefined,
-        name,
+        name: jobName,
+        job_number: jobNumber,
         next_step: next_step || undefined,
         sales_stage: sales_stage || undefined,
         status: "ACTIVE",
@@ -76,12 +104,12 @@ export const createOpportunity = async (data: {
           to: notifyRecipient.email || "info@softbase.cz",
           subject:
             notifyRecipient.userLanguage === "en"
-              ? `New opportunity ${name} has been added to the system and assigned to you.`
-              : `Nová příležitost ${name} byla přidána do systému a přidělena vám.`,
+              ? `New opportunity ${jobName} has been added to the system and assigned to you.`
+              : `Nová příležitost ${jobName} byla přidána do systému a přidělena vám.`,
           text:
             notifyRecipient.userLanguage === "en"
-              ? `New opportunity ${name} has been added to the system and assigned to you. You can click here for detail: ${process.env.NEXT_PUBLIC_APP_URL}/crm/opportunities/${opportunity.id}`
-              : `Nová příležitost ${name} byla přidána do systému a přidělena vám. Detaily naleznete zde: ${process.env.NEXT_PUBLIC_APP_URL}/crm/opportunities/${opportunity.id}`,
+              ? `New opportunity ${jobName} has been added to the system and assigned to you. You can click here for detail: ${process.env.NEXT_PUBLIC_APP_URL}/crm/opportunities/${opportunity.id}`
+              : `Nová příležitost ${jobName} byla přidána do systému a přidělena vám. Detaily naleznete zde: ${process.env.NEXT_PUBLIC_APP_URL}/crm/opportunities/${opportunity.id}`,
         });
       }
     }

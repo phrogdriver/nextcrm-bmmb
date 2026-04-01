@@ -1,8 +1,17 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+} from "@/components/ui/sheet";
 import {
   User,
   Home,
@@ -96,66 +105,70 @@ function SidebarCard({
 // ── Customer Card ────────────────────────────────────────────
 
 function CustomerCard({ job }: { job: Job }) {
-  const [editing, setEditing] = useState(false);
-  const contact = job.contacts?.[0]?.contact;
+  const contacts = (job.contacts ?? []).map((c: any) => c.contact).filter(Boolean) as Array<{
+    id: string;
+    first_name: string | null;
+    last_name: string | null;
+    email: string | null;
+    mobile_phone: string | null;
+    office_phone: string | null;
+  }>;
   const account = job.assigned_account;
-
-  // Customer editing is limited to account/contact assignment for now
-  const fields: FieldDef[] = [
-    { key: "name", label: "Job Name", type: "text" },
-    { key: "job_number", label: "Job Number", type: "text" },
-  ];
-
-  const initialValues = {
-    name: str(job.name),
-    job_number: str(job.job_number),
-  };
 
   return (
     <>
-      <SidebarCard icon={User} title="Customer" onEdit={() => setEditing(true)}>
+      <SidebarCard icon={User} title="Customer">
         <div className="space-y-3">
-          {contact && (
-            <>
-              <p className="text-sm font-semibold">
-                {contact.first_name} {contact.last_name}
-              </p>
-              {contact.mobile_phone && (
-                <a
-                  href={`tel:${contact.mobile_phone}`}
-                  className="flex items-center gap-1.5 text-sm text-primary hover:underline"
-                >
-                  <Phone className="h-3.5 w-3.5" />
-                  {contact.mobile_phone}
-                </a>
+          {/* Account */}
+          {account && (
+            <div>
+              <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">Account</p>
+              <p className="text-sm font-semibold">{account.name}</p>
+            </div>
+          )}
+
+          {/* Contacts */}
+          {contacts.length > 0 ? (
+            <div className="space-y-3">
+              {contacts.length > 1 && (
+                <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+                  Contacts ({contacts.length})
+                </p>
               )}
-              {contact.email && (
-                <a
-                  href={`mailto:${contact.email}`}
-                  className="flex items-center gap-1.5 text-sm text-primary hover:underline"
-                >
-                  <Mail className="h-3.5 w-3.5" />
-                  {contact.email}
-                </a>
+              {!account && contacts.length === 1 && (
+                <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">Contact</p>
               )}
-            </>
-          )}
-          {!contact && account && (
-            <p className="text-sm font-semibold">{account.name}</p>
-          )}
-          {!contact && !account && (
-            <p className="text-sm text-muted-foreground">No contact assigned</p>
-          )}
+              {contacts.map((contact) => (
+                <div key={contact.id} className="space-y-0.5">
+                  <p className="text-sm font-medium">
+                    {contact.first_name} {contact.last_name}
+                  </p>
+                  {contact.mobile_phone && (
+                    <a
+                      href={`tel:${contact.mobile_phone}`}
+                      className="flex items-center gap-1.5 text-xs text-primary hover:underline"
+                    >
+                      <Phone className="h-3 w-3" />
+                      {contact.mobile_phone}
+                    </a>
+                  )}
+                  {contact.email && (
+                    <a
+                      href={`mailto:${contact.email}`}
+                      className="flex items-center gap-1.5 text-xs text-primary hover:underline"
+                    >
+                      <Mail className="h-3 w-3" />
+                      {contact.email}
+                    </a>
+                  )}
+                </div>
+              ))}
+            </div>
+          ) : !account ? (
+            <p className="text-sm text-muted-foreground">No customer assigned</p>
+          ) : null}
         </div>
       </SidebarCard>
-      <EditSheet
-        open={editing}
-        onOpenChange={setEditing}
-        title="Edit Job Identity"
-        jobId={job.id}
-        fields={fields}
-        initialValues={initialValues}
-      />
     </>
   );
 }
@@ -164,27 +177,103 @@ function CustomerCard({ job }: { job: Job }) {
 
 function PropertyCard({ job }: { job: Job }) {
   const [editing, setEditing] = useState(false);
+  const [mode, setMode] = useState<"view" | "edit" | "search" | "create">("view");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [searchResults, setSearchResults] = useState<any[]>([]);
+  const [searching, setSearching] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [formValues, setFormValues] = useState<Record<string, string>>({});
+  const router = useRouter();
+
   const prop = job.assigned_property;
 
-  const fields: FieldDef[] = [
-    { key: "companycam_url", label: "CompanyCam URL", type: "text", placeholder: "https://..." },
-    { key: "companycam_id", label: "CompanyCam ID", type: "text" },
-    { key: "territory", label: "Territory", type: "text" },
-    { key: "project_type", label: "Project Type", type: "text", placeholder: "Roof Replacement, Repair, etc." },
-    { key: "roof_type", label: "Roof Type", type: "text" },
-  ];
-
-  const initialValues = {
-    companycam_url: str(job.companycam_url),
-    companycam_id: str(job.companycam_id),
-    territory: str(job.territory),
-    project_type: str(job.project_type),
-    roof_type: str(job.roof_type),
+  const openEdit = () => {
+    if (prop) {
+      setMode("edit");
+      setFormValues({
+        address: str(prop.address),
+        city: str(prop.city),
+        state: str(prop.state),
+        zip: str(prop.zip),
+        property_type: str(prop.property_type),
+        companycam_id: str(prop.companycam_id),
+      });
+    } else {
+      setMode("search");
+    }
+    setEditing(true);
   };
+
+  const handleSearch = async () => {
+    if (searchQuery.length < 2) return;
+    setSearching(true);
+    const { searchProperties } = await import("@/actions/crm/properties/get-properties");
+    const results = await searchProperties(searchQuery);
+    setSearchResults(results);
+    setSearching(false);
+  };
+
+  const handleLink = async (propertyId: string) => {
+    setSaving(true);
+    const { linkPropertyToJob } = await import("@/actions/crm/properties/get-properties");
+    const result = await linkPropertyToJob(propertyId, job.id);
+    setSaving(false);
+    if (!result.error) {
+      setEditing(false);
+      router.refresh();
+    }
+  };
+
+  const handleCreate = async () => {
+    if (!formValues.address) return;
+    setSaving(true);
+    const { createProperty } = await import("@/actions/crm/properties/get-properties");
+    const result = await createProperty({
+      address: formValues.address,
+      city: formValues.city || undefined,
+      state: formValues.state || undefined,
+      zip: formValues.zip || undefined,
+      property_type: formValues.property_type || undefined,
+      companycam_id: formValues.companycam_id || undefined,
+      jobId: job.id,
+    });
+    setSaving(false);
+    if (!result.error) {
+      setEditing(false);
+      router.refresh();
+    }
+  };
+
+  const handleUpdate = async () => {
+    if (!prop) return;
+    setSaving(true);
+    const { updateProperty } = await import("@/actions/crm/properties/get-properties");
+    const changed: Record<string, unknown> = {};
+    for (const [key, val] of Object.entries(formValues)) {
+      if (val !== str((prop as any)[key])) {
+        changed[key] = val || null;
+      }
+    }
+    if (Object.keys(changed).length > 0) {
+      await updateProperty(prop.id, changed);
+    }
+    setSaving(false);
+    setEditing(false);
+    router.refresh();
+  };
+
+  const propFields = [
+    { key: "address", label: "Address", required: true },
+    { key: "city", label: "City" },
+    { key: "state", label: "State" },
+    { key: "zip", label: "ZIP" },
+    { key: "property_type", label: "Property Type" },
+    { key: "companycam_id", label: "CompanyCam ID" },
+  ];
 
   return (
     <>
-      <SidebarCard icon={Home} title="Property" onEdit={() => setEditing(true)}>
+      <SidebarCard icon={Home} title="Property" onEdit={openEdit}>
         {prop ? (
           <div className="space-y-2">
             <div className="flex items-start gap-1.5">
@@ -219,14 +308,105 @@ function PropertyCard({ job }: { job: Job }) {
           <p className="text-sm text-muted-foreground">No property linked</p>
         )}
       </SidebarCard>
-      <EditSheet
-        open={editing}
-        onOpenChange={setEditing}
-        title="Edit Property & Job Details"
-        jobId={job.id}
-        fields={fields}
-        initialValues={initialValues}
-      />
+
+      <Sheet open={editing} onOpenChange={setEditing}>
+        <SheetContent className="sm:max-w-md overflow-y-auto">
+          <SheetHeader>
+            <SheetTitle>
+              {mode === "edit" ? "Edit Property" : mode === "create" ? "New Property" : "Link Property"}
+            </SheetTitle>
+          </SheetHeader>
+
+          {/* Search mode */}
+          {mode === "search" && (
+            <div className="space-y-4 mt-6">
+              <div className="flex gap-2">
+                <Input
+                  placeholder="Search by address..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  onKeyDown={(e) => e.key === "Enter" && handleSearch()}
+                />
+                <Button onClick={handleSearch} disabled={searching} size="sm">
+                  {searching ? "..." : "Search"}
+                </Button>
+              </div>
+              {searchResults.length > 0 && (
+                <div className="space-y-1">
+                  {searchResults.map((p) => (
+                    <button
+                      key={p.id}
+                      className="w-full text-left px-3 py-2 rounded-md hover:bg-muted/50 transition-colors"
+                      onClick={() => handleLink(p.id)}
+                      disabled={saving}
+                    >
+                      <p className="text-sm font-medium">{p.address}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {[p.city, p.state, p.zip].filter(Boolean).join(", ")}
+                        {p._count.jobs > 0 && ` · ${p._count.jobs} job${p._count.jobs > 1 ? "s" : ""}`}
+                      </p>
+                    </button>
+                  ))}
+                </div>
+              )}
+              {searchResults.length === 0 && searchQuery.length >= 2 && !searching && (
+                <p className="text-sm text-muted-foreground">No properties found.</p>
+              )}
+              <Button
+                variant="outline"
+                className="w-full"
+                onClick={() => {
+                  setMode("create");
+                  setFormValues({ address: searchQuery });
+                }}
+              >
+                + Create New Property
+              </Button>
+            </div>
+          )}
+
+          {/* Create / Edit mode */}
+          {(mode === "create" || mode === "edit") && (
+            <div className="space-y-4 mt-6">
+              {propFields.map((f) => (
+                <div key={f.key} className="space-y-1.5">
+                  <Label htmlFor={f.key}>
+                    {f.label}
+                    {f.required && <span className="text-destructive ml-1">*</span>}
+                  </Label>
+                  <Input
+                    id={f.key}
+                    value={formValues[f.key] ?? ""}
+                    onChange={(e) =>
+                      setFormValues((prev) => ({ ...prev, [f.key]: e.target.value }))
+                    }
+                  />
+                </div>
+              ))}
+              <div className="flex justify-end gap-2 pt-4">
+                <Button variant="outline" onClick={() => setEditing(false)} disabled={saving}>
+                  Cancel
+                </Button>
+                {mode === "edit" && prop && (
+                  <Button
+                    variant="outline"
+                    onClick={() => { setMode("search"); setSearchQuery(""); setSearchResults([]); }}
+                    disabled={saving}
+                  >
+                    Change Property
+                  </Button>
+                )}
+                <Button
+                  onClick={mode === "create" ? handleCreate : handleUpdate}
+                  disabled={saving || !formValues.address}
+                >
+                  {saving ? "Saving..." : mode === "create" ? "Create & Link" : "Save"}
+                </Button>
+              </div>
+            </div>
+          )}
+        </SheetContent>
+      </Sheet>
     </>
   );
 }
@@ -410,8 +590,6 @@ function AdditionalInfoCard({ job }: { job: Job }) {
   const [editing, setEditing] = useState(false);
 
   const fields: FieldDef[] = [
-    { key: "job_number", label: "Job Number", type: "text" },
-    { key: "name", label: "Job Name", type: "text" },
     {
       key: "payor_type",
       label: "Payor Type",
@@ -421,12 +599,78 @@ function AdditionalInfoCard({ job }: { job: Job }) {
         { value: "CASH_RETAIL", label: "Cash / Retail" },
       ],
     },
-    { key: "project_type", label: "Project Type", type: "text", placeholder: "Roof Replacement, Repair, etc." },
-    { key: "property_type", label: "Property Type", type: "text", placeholder: "Residential, Commercial" },
-    { key: "roof_type", label: "Roof Type", type: "text", placeholder: "Asphalt, Metal, Tile, etc." },
-    { key: "primary_lead_source", label: "Primary Lead Source", type: "text" },
-    { key: "secondary_lead_source", label: "Secondary Lead Source", type: "text" },
-    { key: "territory", label: "Territory", type: "text" },
+    {
+      key: "project_type",
+      label: "Project Type",
+      type: "select",
+      options: [
+        { value: "Roof Replacement", label: "Roof Replacement" },
+        { value: "Roof Repair", label: "Roof Repair" },
+        { value: "Gutter", label: "Gutter" },
+        { value: "Paint", label: "Paint" },
+        { value: "Other", label: "Other" },
+      ],
+    },
+    {
+      key: "property_type",
+      label: "Property Type",
+      type: "select",
+      options: [
+        { value: "Residential", label: "Residential" },
+        { value: "Commercial", label: "Commercial" },
+      ],
+    },
+    {
+      key: "roof_type",
+      label: "Roof Type",
+      type: "select",
+      options: [
+        { value: "Asphalt Shingle", label: "Asphalt Shingle" },
+        { value: "Metal", label: "Metal" },
+        { value: "Tile", label: "Tile" },
+        { value: "Flat/TPO", label: "Flat / TPO" },
+        { value: "Slate", label: "Slate" },
+        { value: "Wood Shake", label: "Wood Shake" },
+        { value: "Other", label: "Other" },
+      ],
+    },
+    {
+      key: "primary_lead_source",
+      label: "Primary Lead Source",
+      type: "select",
+      options: [
+        { value: "Company", label: "Company" },
+        { value: "Sales Rep", label: "Sales Rep" },
+      ],
+    },
+    {
+      key: "secondary_lead_source",
+      label: "Secondary Lead Source",
+      type: "select",
+      options: [
+        { value: "D2D Canvassing", label: "D2D Canvassing" },
+        { value: "Inbound Call", label: "Inbound Call" },
+        { value: "Web Form", label: "Web Form" },
+        { value: "Angi", label: "Angi" },
+        { value: "Google LSA", label: "Google LSA" },
+        { value: "Google Ads", label: "Google Ads" },
+        { value: "Facebook Ads", label: "Facebook Ads" },
+        { value: "Referral", label: "Referral" },
+        { value: "Repeat Customer", label: "Repeat Customer" },
+        { value: "Webchat", label: "Webchat" },
+        { value: "Other", label: "Other" },
+      ],
+    },
+    {
+      key: "territory",
+      label: "Territory",
+      type: "select",
+      options: [
+        { value: "Colorado Springs", label: "Colorado Springs" },
+        { value: "Denver", label: "Denver" },
+        { value: "Austin", label: "Austin" },
+      ],
+    },
     { key: "description", label: "Notes / Description", type: "textarea" },
   ];
 
@@ -436,7 +680,6 @@ function AdditionalInfoCard({ job }: { job: Job }) {
   }
 
   const infoRows = ([
-    ["Job Number", job.job_number] as const,
     ["Payor Type", job.payor_type === "INSURANCE" ? "Insurance" : job.payor_type === "CASH_RETAIL" ? "Cash / Retail" : null] as const,
     ["Project Type", job.project_type] as const,
     ["Property Type", job.property_type] as const,

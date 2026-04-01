@@ -89,7 +89,7 @@ export function EditSheet({
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent className="sm:max-w-md">
+      <SheetContent className="sm:max-w-md overflow-y-auto">
         <SheetHeader>
           <SheetTitle>{title}</SheetTitle>
         </SheetHeader>
