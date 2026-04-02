@@ -329,8 +329,9 @@ export function UpdateLeadForm({ initialData, setOpen, leadSources, leadStatuses
                     </Select>
                     <FormMessage />
                   </FormItem>
-              )}
-            />
+                )}
+              />
+            </div>
           </div>
         </div>
         <div className="grid gap-2 py-5">
