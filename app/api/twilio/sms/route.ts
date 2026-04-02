@@ -72,7 +72,7 @@ export async function POST(request: Request) {
     });
   }
 
-  // Store the message
+  // Store the message (twilioFrom = the Twilio number they texted)
   await (prismadb as any).crm_Messages.create({
     data: {
       conversationId: conversation.id,
@@ -81,6 +81,7 @@ export async function POST(request: Request) {
       mediaUrls,
       twilioMessageSid: messageSid,
       twilioStatus: "received",
+      twilioFrom: to,
     },
   });
 

@@ -763,6 +763,7 @@ model crm_Messages {
   // Twilio SMS fields
   twilioMessageSid  String?   @unique
   twilioStatus      String?   // queued, sent, delivered, failed, received
+  twilioFrom        String?   // the Twilio number used (inbound: number they texted; outbound: number we sent from)
 
   sentBy          String?   @db.Uuid  // user who sent (null for inbound)
   createdAt       DateTime  @default(now())
