@@ -24,6 +24,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import { AddressAutocomplete, type ParsedAddress } from "@/components/ui/address-autocomplete";
 import { createLead } from "@/actions/crm/leads/create-lead";
 
 //TODO: fix all the types
@@ -175,10 +176,16 @@ export function NewLeadForm({ leadSources, leadStatuses, leadTypes, onFinish }: 
                 <FormItem>
                   <FormLabel>{t("propertyAddress")}</FormLabel>
                   <FormControl>
-                    <Input
+                    <AddressAutocomplete
+                      value={field.value}
+                      onChange={field.onChange}
+                      onSelect={(parsed: ParsedAddress) => {
+                        form.setValue("property_address", parsed.address);
+                        form.setValue("property_city", parsed.city);
+                        form.setValue("property_state", parsed.state);
+                        form.setValue("property_zip", parsed.zip);
+                      }}
                       disabled={form.formState.isSubmitting}
-                      placeholder="123 Main St"
-                      {...field}
                     />
                   </FormControl>
                   <FormMessage />
@@ -195,7 +202,7 @@ export function NewLeadForm({ leadSources, leadStatuses, leadTypes, onFinish }: 
                     <FormControl>
                       <Input
                         disabled={form.formState.isSubmitting}
-                        placeholder="Springfield"
+                        placeholder="City"
                         {...field}
                       />
                     </FormControl>
@@ -212,7 +219,7 @@ export function NewLeadForm({ leadSources, leadStatuses, leadTypes, onFinish }: 
                     <FormControl>
                       <Input
                         disabled={form.formState.isSubmitting}
-                        placeholder="MO"
+                        placeholder="CO"
                         {...field}
                       />
                     </FormControl>
@@ -229,7 +236,7 @@ export function NewLeadForm({ leadSources, leadStatuses, leadTypes, onFinish }: 
                     <FormControl>
                       <Input
                         disabled={form.formState.isSubmitting}
-                        placeholder="65801"
+                        placeholder="80903"
                         {...field}
                       />
                     </FormControl>

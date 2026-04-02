@@ -128,6 +128,7 @@
     "@playwright/test": "^1.58.2",
     "@types/bcrypt": "^6.0.0",
     "@types/bcryptjs": "^3.0.0",
+    "@types/google.maps": "^3.58.1",
     "@types/imap": "^0.8.43",
     "@types/jest": "^30.0.0",
     "@types/mailparser": "^3.4.6",

@@ -30,6 +30,7 @@ import {
 import { type Job } from "@/actions/crm/get-job";
 import { format } from "date-fns";
 import { EditSheet, type FieldDef } from "@/components/crm/EditSheet";
+import { AddressAutocomplete, type ParsedAddress } from "@/components/ui/address-autocomplete";
 
 // ── Helpers ──────────────────────────────────────────────────
 
@@ -448,60 +449,72 @@ function PropertyCard({ job }: { job: Job }) {
           {/* Search mode */}
           {mode === "search" && (
             <div className="space-y-4 mt-6">
-              <div className="flex gap-2">
-                <Input
-                  placeholder="Search by address..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  onKeyDown={(e) => e.key === "Enter" && handleSearch()}
-                />
-                <Button onClick={handleSearch} disabled={searching} size="sm">
-                  {searching ? "..." : "Search"}
-                </Button>
-              </div>
-              {searchResults.length > 0 && (
-                <div className="space-y-1">
-                  {searchResults.map((p) => (
-                    <button
-                      key={p.id}
-                      className="w-full text-left px-3 py-2 rounded-md hover:bg-muted/50 transition-colors"
-                      onClick={() => handleLink(p.id)}
-                      disabled={saving}
-                    >
-                      <p className="text-sm font-medium">{p.address}</p>
-                      <p className="text-xs text-muted-foreground">
-                        {[p.city, p.state, p.zip].filter(Boolean).join(", ")}
-                        {p._count.jobs > 0 && ` · ${p._count.jobs} job${p._count.jobs > 1 ? "s" : ""}`}
-                      </p>
-                    </button>
-                  ))}
+              <AddressAutocomplete
+                placeholder="Start typing an address..."
+                onSelect={(parsed: ParsedAddress) => {
+                  setFormValues({
+                    address: parsed.address,
+                    city: parsed.city,
+                    state: parsed.state,
+                    zip: parsed.zip,
+                  });
+                  setMode("create");
+                }}
+                onChange={(val) => setSearchQuery(val)}
+              />
+              {searchQuery.length >= 3 && (
+                <div>
+                  <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground mb-1">Existing Properties</p>
+                  <Button size="sm" variant="outline" className="mb-2" onClick={handleSearch} disabled={searching}>
+                    {searching ? "Searching..." : "Search existing"}
+                  </Button>
+                  {searchResults.length > 0 && (
+                    <div className="space-y-1">
+                      {searchResults.map((p) => (
+                        <button
+                          key={p.id}
+                          className="w-full text-left px-3 py-2 rounded-md hover:bg-muted/50 transition-colors"
+                          onClick={() => handleLink(p.id)}
+                          disabled={saving}
+                        >
+                          <p className="text-sm font-medium">{p.address}</p>
+                          <p className="text-xs text-muted-foreground">
+                            {[p.city, p.state, p.zip].filter(Boolean).join(", ")}
+                            {p._count.jobs > 0 && ` · ${p._count.jobs} job${p._count.jobs > 1 ? "s" : ""}`}
+                          </p>
+                        </button>
+                      ))}
+                    </div>
+                  )}
                 </div>
               )}
-              {searchResults.length === 0 && searchQuery.length >= 2 && !searching && (
-                <p className="text-sm text-muted-foreground">No properties found.</p>
-              )}
-              <Button
-                variant="outline"
-                className="w-full"
-                onClick={() => {
-                  setMode("create");
-                  setFormValues({ address: searchQuery });
-                }}
-              >
-                + Create New Property
-              </Button>
             </div>
           )}
 
           {/* Create / Edit mode */}
           {(mode === "create" || mode === "edit") && (
             <div className="space-y-4 mt-6">
-              {propFields.map((f) => (
+              {/* Address field with Google autocomplete */}
+              <div className="space-y-1.5">
+                <Label>Address <span className="text-destructive ml-1">*</span></Label>
+                <AddressAutocomplete
+                  value={formValues.address ?? ""}
+                  onChange={(val) => setFormValues((prev) => ({ ...prev, address: val }))}
+                  onSelect={(parsed: ParsedAddress) => {
+                    setFormValues((prev) => ({
+                      ...prev,
+                      address: parsed.address,
+                      city: parsed.city,
+                      state: parsed.state,
+                      zip: parsed.zip,
+                    }));
+                  }}
+                />
+              </div>
+              {/* Remaining fields */}
+              {propFields.filter((f) => f.key !== "address").map((f) => (
                 <div key={f.key} className="space-y-1.5">
-                  <Label htmlFor={f.key}>
-                    {f.label}
-                    {f.required && <span className="text-destructive ml-1">*</span>}
-                  </Label>
+                  <Label htmlFor={f.key}>{f.label}</Label>
                   <Input
                     id={f.key}
                     value={formValues[f.key] ?? ""}
