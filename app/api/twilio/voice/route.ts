@@ -54,15 +54,15 @@ async function handleOutbound(to: string, callSid: string) {
   const callerId = conversation?.trackingNumber?.phoneNumber
     ?? process.env.TWILIO_DEFAULT_NUMBER!;
 
-  const statusCallback = `${process.env.NEXT_PUBLIC_APP_URL}/api/twilio/voice/status`;
+  const actionUrl = `${process.env.NEXT_PUBLIC_APP_URL}/api/twilio/voice/status`;
 
   const twiml = new VoiceResponse();
   const dial = twiml.dial({
     callerId,
     timeout: 30,
-    statusCallback,
-    statusCallbackEvent: "initiated ringing answered completed",
-  } as any);
+    action: actionUrl,
+    method: "POST",
+  });
   dial.number(to);
 
   return new NextResponse(twiml.toString(), {
@@ -135,15 +135,16 @@ async function handleInbound(
   }
 
   // Ring browser clients
-  const statusCallback = `${process.env.NEXT_PUBLIC_APP_URL}/api/twilio/voice/status`;
+  // Use action URL (not statusCallback) — guaranteed to fire after Dial ends
+  const actionUrl = `${process.env.NEXT_PUBLIC_APP_URL}/api/twilio/voice/status`;
 
   const twiml = new VoiceResponse();
   const dial = twiml.dial({
     callerId: from,
     timeout: 30,
-    statusCallback,
-    statusCallbackEvent: "initiated ringing answered completed",
-  } as any);
+    action: actionUrl,
+    method: "POST",
+  });
   dial.client("crm-agent");
 
   return new NextResponse(twiml.toString(), {
