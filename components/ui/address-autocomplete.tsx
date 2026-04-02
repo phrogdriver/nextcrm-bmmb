@@ -105,6 +105,15 @@ export function AddressAutocomplete({
       .catch(() => setError(true));
   }, []);
 
+  // Ensure Google's dropdown renders above Sheet/Dialog overlays
+  useEffect(() => {
+    if (typeof document === "undefined") return;
+    const style = document.createElement("style");
+    style.textContent = ".pac-container { z-index: 99999 !important; }";
+    document.head.appendChild(style);
+    return () => { document.head.removeChild(style); };
+  }, []);
+
   useEffect(() => {
     if (!loaded || !inputRef.current || autocompleteRef.current) return;
 
