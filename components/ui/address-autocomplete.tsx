@@ -106,12 +106,33 @@ export function AddressAutocomplete({
   }, []);
 
   // Ensure Google's dropdown renders above Sheet/Dialog overlays
+  // and prevent Radix focus trap from stealing pointer events
   useEffect(() => {
     if (typeof document === "undefined") return;
     const style = document.createElement("style");
-    style.textContent = ".pac-container { z-index: 99999 !important; }";
+    style.textContent = `
+      .pac-container {
+        z-index: 99999 !important;
+        pointer-events: auto !important;
+      }
+    `;
     document.head.appendChild(style);
-    return () => { document.head.removeChild(style); };
+
+    // Radix Dialog's focus trap intercepts mousedown outside the dialog content.
+    // The pac-container is outside the dialog, so clicks get swallowed.
+    // This handler stops propagation on pac-container clicks before Radix sees them.
+    const handleMouseDown = (e: MouseEvent) => {
+      const target = e.target as HTMLElement;
+      if (target.closest(".pac-container")) {
+        e.stopPropagation();
+      }
+    };
+    document.addEventListener("mousedown", handleMouseDown, true);
+
+    return () => {
+      document.head.removeChild(style);
+      document.removeEventListener("mousedown", handleMouseDown, true);
+    };
   }, []);
 
   useEffect(() => {
