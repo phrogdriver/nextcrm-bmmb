@@ -327,6 +327,10 @@ model crm_Opportunities {
   stage_transitions    crm_Stage_Transitions[]
   appointments         crm_Appointments[]
   job_tasks            crm_Job_Tasks[]
+  purchase_orders      crm_Purchase_Orders[]
+  bills                crm_Bills[]
+  expenses             crm_Expenses[]
+  vendor_credits       crm_Vendor_Credits[]
   deletedAt            DateTime?
   deletedBy            String?   @db.Uuid
 
@@ -1065,6 +1069,8 @@ model Users {
   assigned_appointments          crm_Appointments[]    @relation("appointment_assigned_to")
   created_appointments           crm_Appointments[]    @relation("appointment_created_by")
   assigned_job_tasks             crm_Job_Tasks[]       @relation("job_task_assigned_to")
+  created_purchase_orders        crm_Purchase_Orders[] @relation("po_created_by")
+  submitted_expenses             crm_Expenses[]        @relation("expense_submitted_by")
 
   @@index([email])
   @@index([userStatus])
@@ -1266,6 +1272,177 @@ model crm_Stage_Transitions {
   @@index([job_id, transitioned_at])
 }
 
+model crm_Purchase_Orders {
+  id              String                @id @default(uuid()) @db.Uuid
+  job_id          String                @db.Uuid
+  po_number       String?               // auto-generated: PO-{job_number}-{seq}
+  vendor_id       String?               @db.Uuid
+  vendor_name     String                // denormalized for display
+  description     String?
+  category        String?               // labor, materials, haul-off, equipment, other
+  status          crm_PO_Status         @default(DRAFT)
+  amount          Decimal?              @db.Decimal(12, 2)
+  scheduled_date  DateTime?             // delivery or work date
+  completed_date  DateTime?
+  notes           String?
+  createdBy       String?               @db.Uuid
+  createdAt       DateTime              @default(now())
+  updatedAt       DateTime?             @updatedAt
+  deletedAt       DateTime?
+  deletedBy       String?               @db.Uuid
+
+  job             crm_Opportunities     @relation(fields: [job_id], references: [id])
+  vendor          crm_Vendors?          @relation("po_vendor", fields: [vendor_id], references: [id])
+  created_by_user Users?                @relation("po_created_by", fields: [createdBy], references: [id])
+  bills           crm_Bills[]
+  vendor_credits  crm_Vendor_Credits[]
+  tasks           crm_Job_Tasks[]
+
+  @@index([job_id])
+  @@index([status])
+  @@index([vendor_name])
+  @@index([scheduled_date])
+  @@index([job_id, status])
+  @@index([deletedAt])
+}
+
+enum crm_PO_Status {
+  DRAFT
+  ORDERED
+  DISPATCHED
+  RECEIVED
+  COMPLETED
+  CANCELLED
+}
+
+model crm_Bills {
+  id                String              @id @default(uuid()) @db.Uuid
+  job_id            String              @db.Uuid
+  purchase_order_id String?             @db.Uuid
+  vendor_id         String?             @db.Uuid
+  vendor_name       String              // denormalized for display
+  description       String?
+  amount            Decimal             @db.Decimal(12, 2)
+  status            crm_Bill_Status     @default(PENDING)
+  due_date          DateTime?
+  paid_date         DateTime?
+  notes             String?
+  createdBy         String?             @db.Uuid
+  createdAt         DateTime            @default(now())
+  updatedAt         DateTime?           @updatedAt
+  deletedAt         DateTime?
+  deletedBy         String?             @db.Uuid
+
+  job               crm_Opportunities   @relation(fields: [job_id], references: [id])
+  purchase_order    crm_Purchase_Orders? @relation(fields: [purchase_order_id], references: [id])
+  vendor            crm_Vendors?        @relation("bill_vendor", fields: [vendor_id], references: [id])
+
+  @@index([job_id])
+  @@index([purchase_order_id])
+  @@index([status])
+  @@index([deletedAt])
+}
+
+enum crm_Bill_Status {
+  PENDING
+  APPROVED
+  PAID
+  VOID
+}
+
+model crm_Expenses {
+  id              String              @id @default(uuid()) @db.Uuid
+  job_id          String              @db.Uuid
+  description     String
+  amount          Decimal             @db.Decimal(12, 2)
+  date            DateTime
+  payment_method  String?             // "Visa ••4821", "Amex ••1190", etc.
+  submitted_by    String?             @db.Uuid
+  notes           String?
+  createdAt       DateTime            @default(now())
+  updatedAt       DateTime?           @updatedAt
+  deletedAt       DateTime?
+  deletedBy       String?             @db.Uuid
+
+  job             crm_Opportunities   @relation(fields: [job_id], references: [id])
+  submitted_user  Users?              @relation("expense_submitted_by", fields: [submitted_by], references: [id])
+
+  @@index([job_id])
+  @@index([date])
+  @@index([deletedAt])
+}
+
+model crm_Vendor_Credits {
+  id                String              @id @default(uuid()) @db.Uuid
+  job_id            String              @db.Uuid
+  purchase_order_id String?             @db.Uuid
+  vendor_name       String
+  description       String?
+  amount            Decimal             @db.Decimal(12, 2)
+  applied_to_bill   String?             // reference to bill it was applied against
+  status            String              @default("applied") // applied, pending
+  createdAt         DateTime            @default(now())
+  updatedAt         DateTime?           @updatedAt
+  deletedAt         DateTime?
+  deletedBy         String?             @db.Uuid
+
+  job               crm_Opportunities   @relation(fields: [job_id], references: [id])
+  purchase_order    crm_Purchase_Orders? @relation(fields: [purchase_order_id], references: [id])
+
+  @@index([job_id])
+  @@index([purchase_order_id])
+  @@index([deletedAt])
+}
+
+model crm_Vendors {
+  id              String              @id @default(uuid()) @db.Uuid
+  name            String
+  type            String?             // subcontractor, supplier, equipment, other
+  contact_name    String?
+  email           String?
+  phone           String?
+  address         String?
+  city            String?
+  state           String?
+  zip             String?
+  notes           String?
+  is_active       Boolean             @default(true)
+  createdBy       String?             @db.Uuid
+  createdAt       DateTime            @default(now())
+  updatedAt       DateTime?           @updatedAt
+  deletedAt       DateTime?
+  deletedBy       String?             @db.Uuid
+
+  purchase_orders crm_Purchase_Orders[] @relation("po_vendor")
+  bills           crm_Bills[]           @relation("bill_vendor")
+
+  @@index([name])
+  @@index([type])
+  @@index([is_active])
+  @@index([deletedAt])
+}
+
+model crm_PriceBook_Items {
+  id              String              @id @default(uuid()) @db.Uuid
+  name            String
+  description     String?
+  category        String?             // labor, materials, equipment, service, other
+  unit            String?             // sq, lf, each, hour, flat
+  unit_cost       Decimal?            @db.Decimal(12, 2)
+  unit_price      Decimal?            @db.Decimal(12, 2)  // default sell price
+  is_active       Boolean             @default(true)
+  createdBy       String?             @db.Uuid
+  createdAt       DateTime            @default(now())
+  updatedAt       DateTime?           @updatedAt
+  deletedAt       DateTime?
+  deletedBy       String?             @db.Uuid
+
+  @@index([name])
+  @@index([category])
+  @@index([is_active])
+  @@index([deletedAt])
+}
+
 model crm_Job_Tasks {
   id                String              @id @default(uuid()) @db.Uuid
   job_id            String              @db.Uuid
@@ -1277,7 +1454,7 @@ model crm_Job_Tasks {
   completed_at      DateTime?
   assigned_to       String?             @db.Uuid
   appointment_id    String?             @db.Uuid   // optional: task happens during this appointment
-  // purchase_order_id String?          @db.Uuid   // future: link to PO
+  purchase_order_id String?             @db.Uuid   // optional: task relates to a PO
   createdBy         String?             @db.Uuid
   createdAt         DateTime            @default(now())
   updatedAt         DateTime?           @updatedAt
@@ -1287,10 +1464,12 @@ model crm_Job_Tasks {
   job               crm_Opportunities   @relation(fields: [job_id], references: [id])
   assigned_user     Users?              @relation("job_task_assigned_to", fields: [assigned_to], references: [id])
   appointment       crm_Appointments?   @relation(fields: [appointment_id], references: [id])
+  purchase_order    crm_Purchase_Orders? @relation(fields: [purchase_order_id], references: [id])
 
   @@index([job_id])
   @@index([assigned_to])
   @@index([appointment_id])
+  @@index([purchase_order_id])
   @@index([status])
   @@index([due_date])
   @@index([job_id, status])
