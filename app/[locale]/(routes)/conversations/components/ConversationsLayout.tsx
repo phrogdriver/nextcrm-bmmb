@@ -20,7 +20,7 @@ export function ConversationsLayout({ initialConversations }: Props) {
   );
 
   return (
-    <ResizablePanelGroup direction="horizontal" className="min-h-[600px] rounded-lg border">
+    <ResizablePanelGroup orientation="horizontal" className="min-h-[600px] rounded-lg border">
       <ResizablePanel defaultSize={35} minSize={25} maxSize={50}>
         <ConversationsList
           initialConversations={initialConversations}
