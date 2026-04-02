@@ -307,8 +307,29 @@ export function TwilioProvider({ children }: { children: ReactNode }) {
         const conv = await client.getConversationBySid(twilioConvSid);
         conv.on("messageAdded", emitMessage);
         subscribedConvsRef.current.set(twilioConvSid, conv);
-      } catch (err) {
-        console.error("Failed to subscribe to conversation:", twilioConvSid, err);
+        console.log("[Conversations] Subscribed to:", twilioConvSid);
+      } catch (err: any) {
+        // If forbidden, the crm-agent identity isn't a participant yet.
+        // Try to add via server action, then retry.
+        if (err?.message?.includes("Forbidden")) {
+          console.log("[Conversations] Not a participant, requesting join:", twilioConvSid);
+          try {
+            await fetch("/api/twilio/conversations/join", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ conversationSid: twilioConvSid }),
+            });
+            // Retry subscription
+            const conv = await client.getConversationBySid(twilioConvSid);
+            conv.on("messageAdded", emitMessage);
+            subscribedConvsRef.current.set(twilioConvSid, conv);
+            console.log("[Conversations] Joined and subscribed to:", twilioConvSid);
+          } catch (joinErr) {
+            console.error("[Conversations] Failed to join:", twilioConvSid, joinErr);
+          }
+        } else {
+          console.error("[Conversations] Failed to subscribe:", twilioConvSid, err);
+        }
       }
     },
     [emitMessage]

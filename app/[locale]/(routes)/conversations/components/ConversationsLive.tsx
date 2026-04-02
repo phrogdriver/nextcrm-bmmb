@@ -499,6 +499,25 @@ export function ConversationsLive({ initialConversations }: Props) {
     return unsubscribe;
   }, [onNewMessage, detail, refreshList]);
 
+  // Polling fallback: check for new messages every 5 seconds
+  useEffect(() => {
+    if (!selectedId) return;
+    const interval = setInterval(async () => {
+      const { data: latest } = await getMessages(selectedId);
+      setMessages((prev) => {
+        if (latest.length !== prev.length) return latest;
+        return prev;
+      });
+    }, 5000);
+    return () => clearInterval(interval);
+  }, [selectedId]);
+
+  // Poll conversation list every 10 seconds for new conversations
+  useEffect(() => {
+    const interval = setInterval(refreshList, 10000);
+    return () => clearInterval(interval);
+  }, [refreshList]);
+
   // Search
   const handleSearch = useCallback(async () => {
     const { data } = await getConversations(undefined, search || undefined);

@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { prismadb } from "@/lib/prisma";
+import { twilioClient } from "@/lib/twilio/client";
 
 /**
  * Twilio Conversations webhook — handles post-events from Conversations API.
@@ -113,6 +114,7 @@ async function handleMessageAdded(body: Record<string, string>) {
 
 async function handleConversationAdded(body: Record<string, string>) {
   const conversationSid = body.ConversationSid;
+  const serviceSid = process.env.TWILIO_CONVERSATIONS_SERVICE_SID;
 
   const existing = await (prismadb as any).crm_Conversations.findFirst({
     where: { twilioConversationSid: conversationSid },
@@ -125,6 +127,21 @@ async function handleConversationAdded(body: Record<string, string>) {
       status: "open",
     },
   });
+
+  // Add "crm-agent" as a chat participant so the browser SDK can access this conversation
+  if (serviceSid) {
+    try {
+      await twilioClient.conversations.v1
+        .services(serviceSid)
+        .conversations(conversationSid)
+        .participants.create({ identity: "crm-agent" });
+    } catch (err: any) {
+      // 50433 = participant already exists — ignore
+      if (err?.code !== 50433) {
+        console.error("Failed to add crm-agent to conversation:", err);
+      }
+    }
+  }
 }
 
 async function handleConversationStateUpdated(body: Record<string, string>) {
