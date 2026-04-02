@@ -32,11 +32,10 @@ export async function POST(request: Request) {
     where: { phoneNumber: to },
   });
 
-  // Find or create an SMS conversation for this phone number
+  // Find any open conversation for this phone number (regardless of channel)
   let conversation = await (prismadb as any).crm_Conversations.findFirst({
     where: {
       phoneNumber: from,
-      channel: "sms",
       status: "open",
       deletedAt: null,
     },

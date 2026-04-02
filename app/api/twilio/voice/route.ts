@@ -78,12 +78,11 @@ async function handleInbound(
     where: { phoneNumber: to },
   });
 
-  // Find or create conversation
+  // Find any open conversation for this phone number (regardless of channel)
   let conversation = await (prismadb as any).crm_Conversations.findFirst({
     where: {
       phoneNumber: from,
       status: "open",
-      channel: "phone",
       deletedAt: null,
     },
     orderBy: { lastActivityAt: "desc" },
