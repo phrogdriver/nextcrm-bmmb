@@ -6,13 +6,13 @@ import { MapPin } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 export type ParsedAddress = {
-  address: string;       // street address
+  address: string;
   city: string;
   state: string;
   zip: string;
   lat: number | null;
   lng: number | null;
-  formatted: string;     // full formatted address
+  formatted: string;
 };
 
 interface AddressAutocompleteProps {
@@ -90,8 +90,14 @@ export function AddressAutocomplete({
 }: AddressAutocompleteProps) {
   const inputRef = useRef<HTMLInputElement>(null);
   const autocompleteRef = useRef<google.maps.places.Autocomplete | null>(null);
+  const onChangeRef = useRef(onChange);
+  const onSelectRef = useRef(onSelect);
   const [loaded, setLoaded] = useState(false);
   const [error, setError] = useState(false);
+
+  // Keep refs in sync without re-running the effect
+  onChangeRef.current = onChange;
+  onSelectRef.current = onSelect;
 
   useEffect(() => {
     loadGoogleMaps()
@@ -113,8 +119,14 @@ export function AddressAutocomplete({
       if (!place.address_components) return;
 
       const parsed = parsePlace(place);
-      onChange?.(parsed.address);
-      onSelect?.(parsed);
+
+      // Update the input value to the street address
+      if (inputRef.current) {
+        inputRef.current.value = parsed.address;
+      }
+
+      onChangeRef.current?.(parsed.address);
+      onSelectRef.current?.(parsed);
     });
 
     autocompleteRef.current = autocomplete;
@@ -122,9 +134,8 @@ export function AddressAutocomplete({
     return () => {
       google.maps.event.clearInstanceListeners(autocomplete);
     };
-  }, [loaded, onChange, onSelect]);
+  }, [loaded]);
 
-  // If Google Maps fails to load, fall back to a plain input
   if (error) {
     return (
       <Input
@@ -143,7 +154,7 @@ export function AddressAutocomplete({
       <Input
         ref={inputRef}
         defaultValue={value}
-        onChange={(e) => onChange?.(e.target.value)}
+        onChange={(e) => onChangeRef.current?.(e.target.value)}
         placeholder={placeholder}
         disabled={disabled || !loaded}
         className={cn("pl-8", className)}

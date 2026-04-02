@@ -357,6 +357,8 @@ function PropertyCard({ job }: { job: Job }) {
       city: formValues.city || undefined,
       state: formValues.state || undefined,
       zip: formValues.zip || undefined,
+      lat: formValues.lat ? Number(formValues.lat) : undefined,
+      lng: formValues.lng ? Number(formValues.lng) : undefined,
       property_type: formValues.property_type || undefined,
       companycam_id: formValues.companycam_id || undefined,
       jobId: job.id,
@@ -457,6 +459,8 @@ function PropertyCard({ job }: { job: Job }) {
                     city: parsed.city,
                     state: parsed.state,
                     zip: parsed.zip,
+                    lat: parsed.lat?.toString() ?? "",
+                    lng: parsed.lng?.toString() ?? "",
                   });
                   setMode("create");
                 }}
@@ -507,6 +511,8 @@ function PropertyCard({ job }: { job: Job }) {
                       city: parsed.city,
                       state: parsed.state,
                       zip: parsed.zip,
+                      lat: parsed.lat?.toString() ?? "",
+                      lng: parsed.lng?.toString() ?? "",
                     }));
                   }}
                 />

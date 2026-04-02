@@ -46,6 +46,8 @@ export const createProperty = async (data: {
   city?: string;
   state?: string;
   zip?: string;
+  lat?: number;
+  lng?: number;
   property_type?: string;
   companycam_id?: string;
   jobId: string;
