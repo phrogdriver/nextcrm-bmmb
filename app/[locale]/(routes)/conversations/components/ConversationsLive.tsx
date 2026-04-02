@@ -1,11 +1,10 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { useRouter } from "next/navigation";
 import {
-  Phone, PhoneOff, MessageSquare, MessageCircle, Plus, Search,
-  PhoneIncoming, PhoneOutgoing, User, Briefcase, MapPin,
-  Clock, CalendarDays, ArrowUpRight, Megaphone, Mic, MicOff,
+  Phone, PhoneOff, Plus, Search,
+  PhoneIncoming, PhoneOutgoing, User,
+  Mic, MicOff,
 } from "lucide-react";
 import { formatDistanceToNow, format } from "date-fns";
 
@@ -15,7 +14,6 @@ import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Separator } from "@/components/ui/separator";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import {
@@ -36,6 +34,7 @@ import {
   type ConversationListItem,
 } from "@/actions/crm/conversations/get-conversations";
 import { getConversationById, type ConversationDetail as ConvDetail } from "@/actions/crm/conversations/get-conversation-by-id";
+import type { ActivityWithLinks } from "@/actions/crm/activities/get-activities-by-entity";
 import { getMessages, type MessageItem } from "@/actions/crm/conversations/get-messages";
 import { createConversation } from "@/actions/crm/conversations/create-conversation";
 import { updateConversation } from "@/actions/crm/conversations/update-conversation";
@@ -129,6 +128,35 @@ function MessageBubble({ msg }: { msg: MessageItem }) {
     </div>
   );
 }
+
+// ── Call Activity Pill ───────────────────────────────────
+
+function CallPill({ activity }: { activity: ActivityWithLinks }) {
+  const metadata = activity.metadata as { direction?: string; recordingUrl?: string } | null;
+  const direction = metadata?.direction ?? "inbound";
+  const DirIcon = direction === "inbound" ? PhoneIncoming : PhoneOutgoing;
+  const mins = activity.duration ? Math.floor(activity.duration / 60) : 0;
+  const secs = activity.duration ? activity.duration % 60 : 0;
+  const durationStr = activity.duration ? `${mins}:${secs.toString().padStart(2, "0")}` : "";
+
+  return (
+    <div className="flex justify-center my-3">
+      <div className="flex items-center gap-2 bg-muted px-4 py-2 rounded-full text-sm text-muted-foreground">
+        <DirIcon className="h-3.5 w-3.5" />
+        <span>{direction === "inbound" ? "Inbound" : "Outbound"} call</span>
+        {activity.outcome && <span>&middot; {activity.outcome}</span>}
+        {durationStr && <span>&middot; {durationStr}</span>}
+        <span className="text-xs">{format(new Date(activity.date), "MMM d, h:mm a")}</span>
+      </div>
+    </div>
+  );
+}
+
+// ── Timeline Item Type ───────────────────────────────────
+
+type TimelineItem =
+  | { type: "message"; data: MessageItem; timestamp: Date }
+  | { type: "call"; data: ActivityWithLinks; timestamp: Date };
 
 // ── Active Call Bar ──────────────────────────────────────
 
@@ -543,6 +571,7 @@ export function ConversationsLive({ initialConversations }: Props) {
   // Detail state
   const [detail, setDetail] = useState<ConvDetail | null>(null);
   const [messages, setMessages] = useState<MessageItem[]>([]);
+  const [activities, setActivities] = useState<ActivityWithLinks[]>([]);
   const [detailLoading, setDetailLoading] = useState(false);
 
   // Compose
@@ -568,6 +597,7 @@ export function ConversationsLive({ initialConversations }: Props) {
     ]);
     setDetail(convResult.conversation);
     setMessages(msgResult.data);
+    setActivities(convResult.activities);
     setDetailLoading(false);
   }, []);
 
@@ -787,17 +817,41 @@ export function ConversationsLive({ initialConversations }: Props) {
               {/* Active call bar */}
               <ActiveCallBar />
 
-              {/* Messages */}
+              {/* Timeline: messages + call activities merged by timestamp */}
               <ScrollArea className="flex-1">
                 <div className="p-4">
-                  {messages.length === 0 && (
-                    <p className="text-sm text-muted-foreground text-center py-8">
-                      No messages yet. Send an SMS to start the conversation.
-                    </p>
-                  )}
-                  {messages.map((msg) => (
-                    <MessageBubble key={msg.id} msg={msg} />
-                  ))}
+                  {(() => {
+                    const timeline: TimelineItem[] = [
+                      ...messages.map((m) => ({
+                        type: "message" as const,
+                        data: m,
+                        timestamp: new Date(m.createdAt),
+                      })),
+                      ...activities
+                        .filter((a) => a.type === "call")
+                        .map((a) => ({
+                          type: "call" as const,
+                          data: a,
+                          timestamp: new Date(a.date),
+                        })),
+                    ].sort((a, b) => a.timestamp.getTime() - b.timestamp.getTime());
+
+                    if (timeline.length === 0) {
+                      return (
+                        <p className="text-sm text-muted-foreground text-center py-8">
+                          No activity yet. Send an SMS or make a call to start.
+                        </p>
+                      );
+                    }
+
+                    return timeline.map((item) =>
+                      item.type === "message" ? (
+                        <MessageBubble key={`msg-${item.data.id}`} msg={item.data} />
+                      ) : (
+                        <CallPill key={`call-${item.data.id}`} activity={item.data} />
+                      )
+                    );
+                  })()}
                 </div>
               </ScrollArea>
 
