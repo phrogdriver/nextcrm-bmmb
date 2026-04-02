@@ -4,6 +4,7 @@ import { useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { type Job, type PipelineStage } from "@/actions/crm/get-job";
 import type { ActivityWithLinks, ActivityCursor } from "@/actions/crm/activities/get-activities-by-entity";
+import { type JobTask } from "@/actions/crm/job-tasks/get-job-tasks";
 import { type StageGuidance } from "@/lib/pipeline/stage-guidance";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { getAuditLogByEntity } from "@/actions/crm/audit-log/get-audit-log-by-entity";
@@ -38,6 +39,7 @@ interface JobDetailViewProps {
     data: ActivityWithLinks[];
     nextCursor: ActivityCursor | null;
   };
+  jobTasks: JobTask[];
   auditLog: Awaited<ReturnType<typeof getAuditLogByEntity>>;
   isAdmin: boolean;
 }
@@ -47,6 +49,7 @@ export function JobDetailView({
   stages,
   guidance,
   initialActivities,
+  jobTasks,
   auditLog,
   isAdmin,
 }: JobDetailViewProps) {
@@ -115,7 +118,11 @@ export function JobDetailView({
               />
 
               {/* 4. Open: Tasks */}
-              <TasksCard />
+              <TasksCard
+                jobId={job.id}
+                tasks={jobTasks}
+                appointments={job.appointments ?? []}
+              />
 
               {/* 5. Open: Activity Timeline + Audit History */}
               <Tabs defaultValue="activity">

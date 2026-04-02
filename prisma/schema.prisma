@@ -326,6 +326,7 @@ model crm_Opportunities {
   payments             crm_Payments[]
   stage_transitions    crm_Stage_Transitions[]
   appointments         crm_Appointments[]
+  job_tasks            crm_Job_Tasks[]
   deletedAt            DateTime?
   deletedBy            String?   @db.Uuid
 
@@ -1063,6 +1064,7 @@ model Users {
   assigned_invoices              Invoices[]            @relation("assigned_invoices")
   assigned_appointments          crm_Appointments[]    @relation("appointment_assigned_to")
   created_appointments           crm_Appointments[]    @relation("appointment_created_by")
+  assigned_job_tasks             crm_Job_Tasks[]       @relation("job_task_assigned_to")
 
   @@index([email])
   @@index([userStatus])
@@ -1264,6 +1266,51 @@ model crm_Stage_Transitions {
   @@index([job_id, transitioned_at])
 }
 
+model crm_Job_Tasks {
+  id                String              @id @default(uuid()) @db.Uuid
+  job_id            String              @db.Uuid
+  title             String
+  description       String?
+  status            crm_Job_Task_Status @default(OPEN)
+  priority          crm_Job_Task_Priority @default(NORMAL)
+  due_date          DateTime?
+  completed_at      DateTime?
+  assigned_to       String?             @db.Uuid
+  appointment_id    String?             @db.Uuid   // optional: task happens during this appointment
+  // purchase_order_id String?          @db.Uuid   // future: link to PO
+  createdBy         String?             @db.Uuid
+  createdAt         DateTime            @default(now())
+  updatedAt         DateTime?           @updatedAt
+  deletedAt         DateTime?
+  deletedBy         String?             @db.Uuid
+
+  job               crm_Opportunities   @relation(fields: [job_id], references: [id])
+  assigned_user     Users?              @relation("job_task_assigned_to", fields: [assigned_to], references: [id])
+  appointment       crm_Appointments?   @relation(fields: [appointment_id], references: [id])
+
+  @@index([job_id])
+  @@index([assigned_to])
+  @@index([appointment_id])
+  @@index([status])
+  @@index([due_date])
+  @@index([job_id, status])
+  @@index([deletedAt])
+}
+
+enum crm_Job_Task_Status {
+  OPEN
+  IN_PROGRESS
+  DONE
+  CANCELLED
+}
+
+enum crm_Job_Task_Priority {
+  LOW
+  NORMAL
+  HIGH
+  URGENT
+}
+
 model crm_Appointments {
   id              String                @id @default(uuid()) @db.Uuid
   job_id          String                @db.Uuid
@@ -1286,6 +1333,7 @@ model crm_Appointments {
   job             crm_Opportunities     @relation(fields: [job_id], references: [id])
   assigned_user   Users?                @relation("appointment_assigned_to", fields: [assigned_to], references: [id])
   created_by_user Users?                @relation("appointment_created_by", fields: [createdBy], references: [id])
+  tasks           crm_Job_Tasks[]
 
   @@index([job_id])
   @@index([assigned_to])

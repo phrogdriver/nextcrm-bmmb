@@ -7,6 +7,7 @@ import { getJob, getAllStages } from "@/actions/crm/get-job";
 import { getActivitiesByEntity } from "@/actions/crm/activities/get-activities-by-entity";
 import { getAuditLogByEntity } from "@/actions/crm/audit-log/get-audit-log-by-entity";
 import { getStageGuidance } from "@/lib/pipeline/stage-guidance";
+import { getJobTasks } from "@/actions/crm/job-tasks/get-job-tasks";
 
 import { JobDetailView } from "./components/JobDetailView";
 
@@ -27,6 +28,7 @@ const OpportunityView = async (
   const stages = await getAllStages();
   const initialActivities = await getActivitiesByEntity("opportunity", opportunityId);
   const auditLog = await getAuditLogByEntity("opportunity", opportunityId);
+  const jobTasks = await getJobTasks(opportunityId);
 
   // Look up guidance for the current stage
   const currentStage = stages.find(
@@ -44,6 +46,7 @@ const OpportunityView = async (
       stages={stages}
       guidance={guidance}
       initialActivities={initialActivities}
+      jobTasks={jobTasks}
       auditLog={auditLog}
       isAdmin={isAdmin}
     />
