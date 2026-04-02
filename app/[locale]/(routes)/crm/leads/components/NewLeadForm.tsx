@@ -24,39 +24,33 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { UserSearchCombobox } from "@/components/ui/user-search-combobox";
 import { createLead } from "@/actions/crm/leads/create-lead";
 
 //TODO: fix all the types
 type ConfigItem = { id: string; name: string };
 
 type NewTaskFormProps = {
-  accounts: any[];
+  accounts?: any[];
   leadSources: ConfigItem[];
   leadStatuses: ConfigItem[];
   leadTypes: ConfigItem[];
   onFinish?: () => void;
 };
 
-export function NewLeadForm({ accounts, leadSources, leadStatuses, leadTypes, onFinish }: NewTaskFormProps) {
+export function NewLeadForm({ leadSources, leadStatuses, leadTypes, onFinish }: NewTaskFormProps) {
   const t = useTranslations("CrmLeadForm");
   const c = useTranslations("Common");
+  const newStatusId = leadStatuses.find((s) => s.name === "New")?.id ?? "";
 
   const formSchema = z.object({
     first_name: z.string().optional(),
     last_name: z.string().min(1, t("lastNameRequired")).max(30),
-    company: z.string().optional(),
-    jobTitle: z.string().optional(),
     email: z.string().email(t("emailInvalid")).or(z.literal("")).optional(),
     phone: z.string().min(0).max(15).optional(),
     description: z.string().optional(),
     lead_source_id: z.string().optional(),
     lead_status_id: z.string().optional(),
     lead_type_id: z.string().optional(),
-    refered_by: z.string().optional(),
-    campaign: z.string().optional(),
-    assigned_to: z.string().optional(),
-    accountIDs: z.string().optional(),
     property_address: z.string().optional(),
     property_city: z.string().optional(),
     property_state: z.string().optional(),
@@ -72,18 +66,12 @@ export function NewLeadForm({ accounts, leadSources, leadStatuses, leadTypes, on
     defaultValues: {
       first_name: "",
       last_name: "",
-      company: "",
-      jobTitle: "",
       email: "",
       phone: "",
       description: "",
       lead_source_id: "",
-      lead_status_id: "",
+      lead_status_id: newStatusId,
       lead_type_id: "",
-      refered_by: "",
-      campaign: "",
-      assigned_to: "",
-      accountIDs: "",
       property_address: "",
       property_city: "",
       property_state: "",
@@ -138,38 +126,6 @@ export function NewLeadForm({ accounts, leadSources, leadStatuses, leadTypes, on
                         placeholder="Walker"
                         {...field}
                       />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <FormField
-                control={form.control}
-                name="company"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>{t("company")}</FormLabel>
-                    <FormControl>
-                      <Input
-                        disabled={form.formState.isSubmitting}
-                        placeholder="NextCRM Inc."
-                        {...field}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="jobTitle"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>{t("jobTitle")}</FormLabel>
-                    <FormControl>
-                      <Input disabled={form.formState.isSubmitting} placeholder="CTO" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -339,45 +295,6 @@ export function NewLeadForm({ accounts, leadSources, leadStatuses, leadTypes, on
               />
               <FormField
                 control={form.control}
-                name="refered_by"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>{t("referredBy")}</FormLabel>
-                    <FormControl>
-                      <Input
-                        disabled={form.formState.isSubmitting}
-                        placeholder="Johny Walker"
-                        {...field}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <FormField
-                control={form.control}
-                name="lead_status_id"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Lead Status</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
-                      <FormControl>
-                        <SelectTrigger><SelectValue placeholder="Select status…" /></SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        {leadStatuses.map((s) => (
-                          <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
                 name="lead_type_id"
                 render={({ field }) => (
                   <FormItem>
@@ -397,70 +314,6 @@ export function NewLeadForm({ accounts, leadSources, leadStatuses, leadTypes, on
                 )}
               />
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <FormField
-                control={form.control}
-                name="campaign"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>{t("campaign")}</FormLabel>
-                    <FormControl>
-                      <Input
-                        disabled={form.formState.isSubmitting}
-                        placeholder="Social networks"
-                        {...field}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="assigned_to"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>{c("assignedTo")}</FormLabel>
-                    <FormControl>
-                      <UserSearchCombobox
-                        value={field.value ?? ""}
-                        onChange={field.onChange}
-                        placeholder={c("selectUser")}
-                        disabled={form.formState.isSubmitting}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
-            <FormField
-              control={form.control}
-              name="accountIDs"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>{t("assignAccount")}</FormLabel>
-                  <Select
-                    onValueChange={field.onChange}
-                    defaultValue={field.value}
-                  >
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder={t("assignAccountPlaceholder")} />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      {accounts.map((account) => (
-                        <SelectItem key={account.id} value={account.id}>
-                          {account.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
           </div>
         </div>
         <div className="grid gap-2 py-5">

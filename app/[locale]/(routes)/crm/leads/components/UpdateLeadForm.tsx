@@ -25,8 +25,6 @@ import {
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 
-import { UserSearchCombobox } from "@/components/ui/user-search-combobox";
-import { AccountSearchCombobox } from "@/components/ui/account-search-combobox";
 import { updateLead } from "@/actions/crm/leads/update-lead";
 
 //TODO: fix all the types
@@ -48,8 +46,6 @@ export function UpdateLeadForm({ initialData, setOpen, leadSources, leadStatuses
     id: z.uuid(),
     firstName: z.string().optional().nullable(),
     lastName: z.string().min(1, t("lastNameRequired")).max(30),
-    company: z.string().nullable().optional(),
-    jobTitle: z.string().nullable().optional(),
     email: z.string().email(t("emailInvalid")).nullable().optional().or(z.literal("")),
     phone: z.string().min(0).max(15).nullable().optional(),
     description: z.string().nullable().optional(),
@@ -142,38 +138,6 @@ export function UpdateLeadForm({ initialData, setOpen, leadSources, leadStatuses
                         placeholder="Walker"
                         {...field}
                       />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <FormField
-                control={form.control}
-                name="company"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>{t("company")}</FormLabel>
-                    <FormControl>
-                      <Input
-                        disabled={form.formState.isSubmitting}
-                        placeholder="NextCRM Inc."
-                        {...field}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="jobTitle"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>{t("jobTitle")}</FormLabel>
-                    <FormControl>
-                      <Input disabled={form.formState.isSubmitting} placeholder="CTO" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -349,42 +313,6 @@ export function UpdateLeadForm({ initialData, setOpen, leadSources, leadStatuses
               />
               <FormField
                 control={form.control}
-                name="refered_by"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>{t("referredBy")}</FormLabel>
-                    <FormControl>
-                      <Input
-                        disabled={form.formState.isSubmitting}
-                        placeholder="Johny Walker"
-                        {...field}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <FormField
-                control={form.control}
-                name="campaign"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>{t("campaign")}</FormLabel>
-                    <FormControl>
-                      <Input
-                        disabled={form.formState.isSubmitting}
-                        placeholder="Social networks"
-                        {...field}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
                 name="lead_type_id"
                 render={({ field }) => (
                   <FormItem>
@@ -401,65 +329,6 @@ export function UpdateLeadForm({ initialData, setOpen, leadSources, leadStatuses
                     </Select>
                     <FormMessage />
                   </FormItem>
-                )}
-              />
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <FormField
-                control={form.control}
-                name="assigned_to"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>{c("assignedTo")}</FormLabel>
-                    <FormControl>
-                      <UserSearchCombobox
-                        value={field.value ?? ""}
-                        onChange={field.onChange}
-                        placeholder={c("selectUser")}
-                        disabled={form.formState.isSubmitting}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="lead_status_id"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Lead Status</FormLabel>
-                    <Select onValueChange={field.onChange} value={field.value ?? ""}>
-                      <FormControl>
-                        <SelectTrigger><SelectValue placeholder="Select status…" /></SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        {leadStatuses.map((s) => (
-                          <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
-            <FormField
-              control={form.control}
-              name="accountsIDs"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>{t("assignAccount")}</FormLabel>
-                  <FormControl>
-                    <AccountSearchCombobox
-                      value={field.value ?? ""}
-                      onChange={field.onChange}
-                      placeholder={t("assignAccountPlaceholder")}
-                      disabled={form.formState.isSubmitting}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
               )}
             />
           </div>
