@@ -44,6 +44,7 @@ type TwilioContextType = {
   isMuted: boolean;
   // Messaging
   isMessagingReady: boolean;
+  subscribeToConversation: (twilioConvSid: string) => Promise<void>;
   onNewMessage: (handler: (event: NewMessageEvent) => void) => () => void;
 };
 
@@ -65,6 +66,7 @@ const TwilioContext = createContext<TwilioContextType>({
   mute: () => {},
   isMuted: false,
   isMessagingReady: false,
+  subscribeToConversation: async () => {},
   onNewMessage: () => () => {},
 });
 
@@ -81,12 +83,26 @@ export function TwilioProvider({ children }: { children: ReactNode }) {
   const activeCallRef = useRef<Call | null>(null);
   const incomingCallRef = useRef<Call | null>(null);
   const conversationsClientRef = useRef<ConversationsClient | null>(null);
+  const subscribedConvsRef = useRef<Map<string, Conversation>>(new Map());
   const messageHandlersRef = useRef<Set<(event: NewMessageEvent) => void>>(new Set());
 
   const [isReady, setIsReady] = useState(false);
   const [isMessagingReady, setIsMessagingReady] = useState(false);
   const [isMuted, setIsMuted] = useState(false);
   const [callState, setCallState] = useState<CallState>(INITIAL_CALL_STATE);
+
+  const emitMessage = useCallback((message: Message) => {
+    const event: NewMessageEvent = {
+      conversationSid: message.conversation.sid,
+      message: {
+        sid: message.sid,
+        author: message.author ?? "",
+        body: message.body ?? "",
+        dateCreated: message.dateCreated ?? new Date(),
+      },
+    };
+    messageHandlersRef.current.forEach((handler) => handler(event));
+  }, []);
 
   // Fetch token and initialize both Voice Device and Conversations Client
   useEffect(() => {
@@ -150,17 +166,11 @@ export function TwilioProvider({ children }: { children: ReactNode }) {
           }
         });
 
-        convClient.on("messageAdded", (message: Message) => {
-          const event: NewMessageEvent = {
-            conversationSid: message.conversation.sid,
-            message: {
-              sid: message.sid,
-              author: message.author ?? "",
-              body: message.body ?? "",
-              dateCreated: message.dateCreated ?? new Date(),
-            },
-          };
-          messageHandlersRef.current.forEach((handler) => handler(event));
+        // Listen for new conversations being added (e.g., inbound SMS)
+        convClient.on("conversationAdded", (conv: Conversation) => {
+          // Auto-subscribe to message events on new conversations
+          conv.on("messageAdded", emitMessage);
+          subscribedConvsRef.current.set(conv.sid, conv);
         });
 
         convClient.on("connectionError", (error) => {
@@ -178,13 +188,18 @@ export function TwilioProvider({ children }: { children: ReactNode }) {
     return () => {
       mounted = false;
       deviceRef.current?.destroy();
+      // Clean up conversation listeners
+      subscribedConvsRef.current.forEach((conv) => {
+        conv.removeAllListeners();
+      });
+      subscribedConvsRef.current.clear();
       conversationsClientRef.current?.shutdown();
     };
-  }, []);
+  }, [emitMessage]);
 
   // ── Voice controls ──
 
-  const setupCallEvents = useCallback((call: Call, direction: "inbound" | "outbound") => {
+  const setupCallEvents = useCallback((call: Call, _direction: "inbound" | "outbound") => {
     call.on("accept", () => {
       setCallState((prev) => ({
         ...prev,
@@ -274,7 +289,23 @@ export function TwilioProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
-  // ── Messaging: subscribe to new messages ──
+  // ── Messaging: subscribe to a specific Twilio Conversation ──
+
+  const subscribeToConversation = useCallback(
+    async (twilioConvSid: string) => {
+      const client = conversationsClientRef.current;
+      if (!client || subscribedConvsRef.current.has(twilioConvSid)) return;
+
+      try {
+        const conv = await client.getConversationBySid(twilioConvSid);
+        conv.on("messageAdded", emitMessage);
+        subscribedConvsRef.current.set(twilioConvSid, conv);
+      } catch (err) {
+        console.error("Failed to subscribe to conversation:", twilioConvSid, err);
+      }
+    },
+    [emitMessage]
+  );
 
   const onNewMessage = useCallback(
     (handler: (event: NewMessageEvent) => void) => {
@@ -298,6 +329,7 @@ export function TwilioProvider({ children }: { children: ReactNode }) {
         mute,
         isMuted,
         isMessagingReady,
+        subscribeToConversation,
         onNewMessage,
       }}
     >

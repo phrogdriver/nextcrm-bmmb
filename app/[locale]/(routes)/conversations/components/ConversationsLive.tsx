@@ -418,7 +418,7 @@ function NewConversationSheet({
 // ── Main Component ───────────────────────────────────────
 
 export function ConversationsLive({ initialConversations }: Props) {
-  const { dial, callState, onNewMessage } = useTwilio();
+  const { dial, callState, onNewMessage, subscribeToConversation, isMessagingReady } = useTwilio();
 
   const [conversations, setConversations] = useState(initialConversations);
   const [selectedId, setSelectedId] = useState<string | null>(initialConversations[0]?.id ?? null);
@@ -460,6 +460,13 @@ export function ConversationsLive({ initialConversations }: Props) {
   useEffect(() => {
     if (selectedId) loadDetail(selectedId);
   }, [selectedId, loadDetail]);
+
+  // Subscribe to real-time updates when a conversation with a Twilio SID is selected
+  useEffect(() => {
+    if (detail?.twilioConversationSid && isMessagingReady) {
+      subscribeToConversation(detail.twilioConversationSid);
+    }
+  }, [detail?.twilioConversationSid, isMessagingReady, subscribeToConversation]);
 
   // Real-time: listen for new messages from Twilio Conversations SDK
   useEffect(() => {
