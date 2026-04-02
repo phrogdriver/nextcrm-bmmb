@@ -8,7 +8,7 @@ export default async function ConversationsPage() {
   if (!session) return redirect("/sign-in");
 
   return (
-    <div className="-my-5 -mx-4 flex-1 overflow-hidden">
+    <div className="-my-5 -mx-4 h-[calc(100vh-4.5rem)] overflow-hidden">
       <ConversationsMockup />
     </div>
   );
