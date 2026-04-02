@@ -20,16 +20,23 @@ export async function POST(request: Request) {
     : null;
   const recordingUrl = body.RecordingUrl ?? null;
 
-  // Find the conversation by phone number
+  // Find conversation: try exact CallSid match first, then fall back to phone number
   const customerPhone = direction === "inbound" ? from : to;
-  const conversation = await (prismadb as any).crm_Conversations.findFirst({
-    where: {
-      phoneNumber: customerPhone,
-      status: "open",
-      deletedAt: null,
-    },
-    orderBy: { lastActivityAt: "desc" },
+
+  let conversation = await (prismadb as any).crm_Conversations.findFirst({
+    where: { twilioCallSid: callSid },
   });
+
+  if (!conversation) {
+    conversation = await (prismadb as any).crm_Conversations.findFirst({
+      where: {
+        phoneNumber: customerPhone,
+        status: "open",
+        deletedAt: null,
+      },
+      orderBy: { lastActivityAt: "desc" },
+    });
+  }
 
   console.log("[voice/status] Conversation:", conversation?.id, "direction:", direction, "status:", dialStatus, "duration:", dialDuration);
 
