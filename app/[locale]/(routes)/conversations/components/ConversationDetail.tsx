@@ -158,7 +158,7 @@ export function ConversationDetail({ conversationId }: Props) {
               <ActivityEntry
                 key={activity.id}
                 activity={activity}
-                onUpdate={load}
+                onUpdated={load}
                 entityType="conversation"
                 entityId={conversationId}
               />
