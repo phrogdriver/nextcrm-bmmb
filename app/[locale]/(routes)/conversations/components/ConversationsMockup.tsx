@@ -154,6 +154,87 @@ const MOCK_THREADS: MockThread[] = [
       { id: "m12", type: "sms", direction: "inbound", content: "Hey I saw your truck in my neighborhood. Do you do gutters too?", timestamp: "Today, 7:00 AM" },
     ],
   },
+  {
+    id: "4",
+    name: "Tom & Sarah Chen",
+    phone: "(719) 555-0489",
+    trackingNumber: "(719) 555-8000",
+    source: "Google Ads — Roof Repair",
+    lastMessage: "Perfect, we'll be home. See you then!",
+    lastTime: "2 min ago",
+    unread: 1,
+    status: "open",
+    customer: {
+      type: "contact",
+      name: "Tom Chen",
+      phone: "(719) 555-0489",
+      email: "tom.chen@email.com",
+      address: "4821 Stetson Hills Blvd, Colorado Springs, CO 80922",
+    },
+    job: {
+      id: "J-2024-0138",
+      name: "Chen – Hail Damage Full Replacement",
+      stage: "Claim Approved",
+      payor: "Insurance",
+    },
+    messages: [
+      // Day 1 — Initial contact
+      { id: "m20", type: "call", direction: "inbound", content: "Inbound call — answered", timestamp: "Mar 18, 9:02 AM", duration: "7 min", outcome: "Answered" },
+      { id: "m21", type: "sms", direction: "outbound", content: "Hi Tom, thanks for calling Integrity Roofing! As discussed, I'll have Project Manager Mike out Thursday for the inspection. You're at 4821 Stetson Hills Blvd, correct?", timestamp: "Mar 18, 9:15 AM" },
+      { id: "m22", type: "sms", direction: "inbound", content: "Yes that's correct. What time Thursday?", timestamp: "Mar 18, 9:18 AM" },
+      { id: "m23", type: "sms", direction: "outbound", content: "How does 10am work?", timestamp: "Mar 18, 9:20 AM" },
+      { id: "m24", type: "sms", direction: "inbound", content: "10am is great. Should we be home?", timestamp: "Mar 18, 9:22 AM" },
+      { id: "m25", type: "sms", direction: "outbound", content: "It helps if someone is home so Mike can show you any damage he finds and go over next steps. He'll be there about 45 minutes.", timestamp: "Mar 18, 9:25 AM" },
+      { id: "m26", type: "sms", direction: "inbound", content: "Ok we'll be here. Thanks!", timestamp: "Mar 18, 9:26 AM" },
+
+      // Day 2 — Inspection day
+      { id: "m27", type: "sms", direction: "outbound", content: "Good morning Tom! Just confirming Mike will be at your property today at 10am for the roof inspection.", timestamp: "Mar 20, 8:30 AM" },
+      { id: "m28", type: "sms", direction: "inbound", content: "👍 We're ready", timestamp: "Mar 20, 8:45 AM" },
+      { id: "m29", type: "call", direction: "outbound", content: "Outbound call — answered", timestamp: "Mar 20, 11:15 AM", duration: "12 min", outcome: "Answered" },
+      { id: "m30", type: "sms", direction: "outbound", content: "Tom, following up from Mike's visit. He found significant hail damage on the north and west slopes — impact marks on shingles, damaged ridge cap, and two cracked pipe boots. He recommends filing an insurance claim. I'll email you the inspection report with photos.", timestamp: "Mar 20, 11:30 AM" },
+      { id: "m31", type: "sms", direction: "inbound", content: "Wow didn't realize it was that bad. Yes please send the report. Our insurance is State Farm, should we call them or do you handle that?", timestamp: "Mar 20, 11:35 AM" },
+      { id: "m32", type: "sms", direction: "outbound", content: "You'll need to call State Farm to open the claim. Your policy number should be on your declarations page. Tell them you had a roofing contractor inspect and found hail damage. Once you have a claim number, text it to me and we'll take it from there.", timestamp: "Mar 20, 11:40 AM" },
+      { id: "m33", type: "sms", direction: "inbound", content: "Ok will do. Sarah is calling them now.", timestamp: "Mar 20, 11:42 AM" },
+
+      // Day 3 — Claim filed
+      { id: "m34", type: "sms", direction: "inbound", content: "Claim filed! Number is 44-K829-471. They said an adjuster will call us within 3 business days.", timestamp: "Mar 21, 2:15 PM" },
+      { id: "m35", type: "sms", direction: "outbound", content: "Great, got it! I've added the claim info to your file. When the adjuster calls to schedule, try to get a date when Mike can also be there — it really helps to have our guy on the roof with the adjuster.", timestamp: "Mar 21, 2:20 PM" },
+      { id: "m36", type: "sms", direction: "inbound", content: "Will do. Is that normal to have your guy there?", timestamp: "Mar 21, 2:22 PM" },
+      { id: "m37", type: "sms", direction: "outbound", content: "Absolutely, it's very common and adjusters expect it. Mike knows exactly where the damage is and can make sure nothing gets missed. It protects you.", timestamp: "Mar 21, 2:25 PM" },
+      { id: "m38", type: "sms", direction: "inbound", content: "That makes sense. Thanks for looking out for us.", timestamp: "Mar 21, 2:27 PM" },
+
+      // Day 5 — Adjuster scheduling
+      { id: "m39", type: "sms", direction: "inbound", content: "Adjuster called — they want to come out next Tuesday at 1pm. Does that work for Mike?", timestamp: "Mar 23, 10:00 AM" },
+      { id: "m40", type: "call", direction: "outbound", content: "Outbound call — answered", timestamp: "Mar 23, 10:05 AM", duration: "3 min", outcome: "Answered" },
+      { id: "m41", type: "sms", direction: "outbound", content: "Tuesday at 1pm works! Mike will be there. The adjuster's name is?", timestamp: "Mar 23, 10:10 AM" },
+      { id: "m42", type: "sms", direction: "inbound", content: "Dave Martinez from State Farm", timestamp: "Mar 23, 10:12 AM" },
+      { id: "m43", type: "sms", direction: "outbound", content: "Got it. I've added Dave to the file. Mike will meet him there Tuesday. You don't need to be on the roof but it's good to be home.", timestamp: "Mar 23, 10:15 AM" },
+
+      // Day 8 — Adjuster visit
+      { id: "m44", type: "sms", direction: "outbound", content: "Hi Tom, just checking in — adjuster visit is today at 1pm. Mike is confirmed and heading your way.", timestamp: "Mar 26, 12:30 PM" },
+      { id: "m45", type: "sms", direction: "inbound", content: "Thanks for the reminder! We're home.", timestamp: "Mar 26, 12:35 PM" },
+      { id: "m46", type: "call", direction: "outbound", content: "Outbound call — answered", timestamp: "Mar 26, 2:45 PM", duration: "8 min", outcome: "Answered" },
+      { id: "m47", type: "sms", direction: "outbound", content: "Good news — adjuster agreed with our assessment. Full replacement approved. He's writing up the scope now, you should receive the estimate from State Farm in a few days. ACV check will follow.", timestamp: "Mar 26, 3:00 PM" },
+      { id: "m48", type: "sms", direction: "inbound", content: "That's amazing news!! How long until the actual work happens?", timestamp: "Mar 26, 3:05 PM" },
+      { id: "m49", type: "sms", direction: "outbound", content: "Once we receive the insurance paperwork and your ACV check, we can usually get you on the schedule within 1-2 weeks depending on weather. We'll go over everything before we start.", timestamp: "Mar 26, 3:10 PM" },
+      { id: "m50", type: "sms", direction: "inbound", content: "Sounds good. Sarah and I really appreciate how smooth this has been.", timestamp: "Mar 26, 3:12 PM" },
+
+      // Day 12 — Paperwork and scheduling
+      { id: "m51", type: "sms", direction: "inbound", content: "Got the check from State Farm! $14,200. And the scope of loss document. Want me to take a picture and send it?", timestamp: "Mar 30, 9:00 AM" },
+      { id: "m52", type: "sms", direction: "outbound", content: "Yes please send photos of the check and the scope document. We'll review everything and get you on the schedule.", timestamp: "Mar 30, 9:05 AM" },
+      { id: "m53", type: "sms", direction: "inbound", content: "[Photo of check] [Photo of scope document]", timestamp: "Mar 30, 9:15 AM" },
+      { id: "m54", type: "sms", direction: "outbound", content: "Got them, thank you! Everything looks correct. We need to schedule a time to go over the contract and color selection. Are you available this Wednesday evening?", timestamp: "Mar 30, 9:30 AM" },
+      { id: "m55", type: "sms", direction: "inbound", content: "Wednesday after 5pm works. Can you come to the house?", timestamp: "Mar 30, 9:35 AM" },
+      { id: "m56", type: "sms", direction: "outbound", content: "Perfect, Mike will be there Wednesday at 5:30pm with samples and the contract. He'll walk you through the whole process.", timestamp: "Mar 30, 9:40 AM" },
+
+      // Day 15 — Production scheduling
+      { id: "m57", type: "call", direction: "outbound", content: "Outbound call — answered", timestamp: "Apr 1, 10:00 AM", duration: "5 min", outcome: "Answered" },
+      { id: "m58", type: "sms", direction: "outbound", content: "Tom, great news — you're on the schedule! Crew will be there next Tuesday April 8th, starting at 7am. Full replacement should take 1-2 days depending on weather. A few things to prep: move cars out of the driveway, take down any hanging items on interior walls, and the crew will need access to an exterior outlet.", timestamp: "Apr 1, 10:15 AM" },
+      { id: "m59", type: "sms", direction: "inbound", content: "Awesome! We'll have everything ready. Will someone let us know when they're on the way?", timestamp: "Apr 1, 10:20 AM" },
+      { id: "m60", type: "sms", direction: "outbound", content: "Yes, the crew lead will text you when they're 30 minutes out. And Mike will stop by during the job to check on things. Any questions before then?", timestamp: "Apr 1, 10:25 AM" },
+      { id: "m61", type: "sms", direction: "inbound", content: "Perfect, we'll be home. See you then!", timestamp: "Apr 1, 10:28 AM" },
+    ],
+  },
 ];
 
 // ── Components ───────────────────────────────────────────
@@ -264,7 +345,7 @@ function MessageBubble({ msg }: { msg: MockMessage }) {
 function BookLeadSheet({ open, onOpenChange, thread }: { open: boolean; onOpenChange: (v: boolean) => void; thread: MockThread }) {
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent>
+      <SheetContent className="overflow-y-auto">
         <SheetHeader>
           <SheetTitle>Book Lead</SheetTitle>
           <SheetDescription>Create a new lead from this conversation</SheetDescription>
@@ -340,7 +421,7 @@ function BookLeadSheet({ open, onOpenChange, thread }: { open: boolean; onOpenCh
 function AddContactSheet({ open, onOpenChange, thread }: { open: boolean; onOpenChange: (v: boolean) => void; thread: MockThread }) {
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent>
+      <SheetContent className="overflow-y-auto">
         <SheetHeader>
           <SheetTitle>Add Contact</SheetTitle>
           <SheetDescription>Add as an existing customer or vendor contact</SheetDescription>
