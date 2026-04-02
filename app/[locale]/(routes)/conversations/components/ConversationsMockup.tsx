@@ -342,77 +342,233 @@ function MessageBubble({ msg }: { msg: MockMessage }) {
   );
 }
 
+type MockSlot = {
+  id: string;
+  pm: string;
+  pmInitials: string;
+  date: string;
+  time: string;
+  distance: string;
+  reason: string;
+  recommended?: boolean;
+};
+
+const MOCK_SLOTS: MockSlot[] = [
+  { id: "s1", pm: "Mike Torres", pmInitials: "MT", date: "Tue, Apr 8", time: "10:00 AM", distance: "4.2 mi", reason: "Next in rotation · closest", recommended: true },
+  { id: "s2", pm: "Mike Torres", pmInitials: "MT", date: "Wed, Apr 9", time: "2:00 PM", distance: "4.2 mi", reason: "Same PM · next day" },
+  { id: "s3", pm: "Jake Rivera", pmInitials: "JR", date: "Tue, Apr 8", time: "1:00 PM", distance: "7.8 mi", reason: "Available same day" },
+  { id: "s4", pm: "Jake Rivera", pmInitials: "JR", date: "Thu, Apr 10", time: "9:00 AM", distance: "7.8 mi", reason: "Morning slot" },
+  { id: "s5", pm: "Anna Kowalski", pmInitials: "AK", date: "Wed, Apr 9", time: "10:00 AM", distance: "11.3 mi", reason: "Bilingual (Spanish)" },
+];
+
 function BookLeadSheet({ open, onOpenChange, thread }: { open: boolean; onOpenChange: (v: boolean) => void; thread: MockThread }) {
+  const [step, setStep] = useState<"info" | "schedule">("info");
+  const [selectedSlot, setSelectedSlot] = useState<string | null>("s1");
+  const [manualMode, setManualMode] = useState(false);
+
+  const handleClose = (v: boolean) => {
+    if (!v) { setStep("info"); setSelectedSlot("s1"); setManualMode(false); }
+    onOpenChange(v);
+  };
+
   return (
-    <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent className="overflow-y-auto">
-        <SheetHeader>
-          <SheetTitle>Book Lead</SheetTitle>
-          <SheetDescription>Create a new lead from this conversation</SheetDescription>
-        </SheetHeader>
-        <div className="space-y-4 mt-4">
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label>First name</Label>
-              <Input placeholder="First name" />
+    <Sheet open={open} onOpenChange={handleClose}>
+      <SheetContent className="overflow-y-auto sm:max-w-lg">
+        {step === "info" ? (
+          <>
+            <SheetHeader>
+              <SheetTitle>Book Lead</SheetTitle>
+              <SheetDescription>Create a new lead from this conversation</SheetDescription>
+            </SheetHeader>
+            <div className="space-y-4 mt-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>First name</Label>
+                  <Input placeholder="First name" />
+                </div>
+                <div className="space-y-2">
+                  <Label>Last name</Label>
+                  <Input placeholder="Last name" />
+                </div>
+              </div>
+              <div className="space-y-2">
+                <Label>Phone</Label>
+                <Input defaultValue={thread.phone} />
+              </div>
+              <div className="space-y-2">
+                <Label>Property address</Label>
+                <Input placeholder="123 Main St" />
+              </div>
+              <div className="grid grid-cols-3 gap-4">
+                <div className="space-y-2">
+                  <Label>City</Label>
+                  <Input placeholder="City" />
+                </div>
+                <div className="space-y-2">
+                  <Label>State</Label>
+                  <Input defaultValue="CO" />
+                </div>
+                <div className="space-y-2">
+                  <Label>Zip</Label>
+                  <Input placeholder="80903" />
+                </div>
+              </div>
+              <div className="space-y-2">
+                <Label>What do they need?</Label>
+                <Textarea placeholder="Roof leak, storm damage, gutters, etc." rows={3} />
+              </div>
+              <Separator />
+              <div className="space-y-2">
+                <Label>Lead source</Label>
+                <Select defaultValue={thread.source ?? ""}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select source…" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Google Ads — Roof Repair">Google Ads — Roof Repair</SelectItem>
+                    <SelectItem value="Nextdoor Ad — Hail Season">Nextdoor Ad — Hail Season</SelectItem>
+                    <SelectItem value="Yard Sign — Briargate">Yard Sign — Briargate</SelectItem>
+                    <SelectItem value="Yard Sign — Falcon">Yard Sign — Falcon</SelectItem>
+                    <SelectItem value="Referral">Referral</SelectItem>
+                    <SelectItem value="Website Form">Website Form</SelectItem>
+                    <SelectItem value="Door Knock">Door Knock</SelectItem>
+                  </SelectContent>
+                </Select>
+                {thread.source && (
+                  <p className="text-xs text-muted-foreground flex items-center gap-1">
+                    <Megaphone className="h-3 w-3" />
+                    Auto-detected from tracking number {thread.trackingNumber}
+                  </p>
+                )}
+              </div>
+              <Button className="w-full" onClick={() => setStep("schedule")}>
+                Next: Schedule Inspection
+              </Button>
             </div>
-            <div className="space-y-2">
-              <Label>Last name</Label>
-              <Input placeholder="Last name" />
+          </>
+        ) : (
+          <>
+            <SheetHeader>
+              <SheetTitle>Schedule Inspection</SheetTitle>
+              <SheetDescription>Pick a time — ranked by PM rotation and proximity</SheetDescription>
+            </SheetHeader>
+            <div className="space-y-4 mt-4">
+              {/* Location context */}
+              <Card>
+                <CardContent className="pt-4">
+                  <div className="flex items-start gap-2 text-sm">
+                    <MapPin className="h-4 w-4 text-muted-foreground mt-0.5" />
+                    <div>
+                      <p className="font-medium">Property location</p>
+                      <p className="text-muted-foreground">Briargate area · Colorado Springs, CO 80920</p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {!manualMode ? (
+                <>
+                  {/* Smart suggestions */}
+                  <div className="space-y-2">
+                    <Label className="text-xs uppercase tracking-wider text-muted-foreground">Recommended slots</Label>
+                    <div className="space-y-2">
+                      {MOCK_SLOTS.map((slot) => (
+                        <button
+                          key={slot.id}
+                          onClick={() => setSelectedSlot(slot.id)}
+                          className={cn(
+                            "w-full flex items-center gap-3 p-3 rounded-lg border text-left transition-colors",
+                            selectedSlot === slot.id
+                              ? "border-primary bg-primary/5 ring-1 ring-primary"
+                              : "hover:bg-accent",
+                            slot.recommended && selectedSlot !== slot.id && "border-green-200 dark:border-green-800 bg-green-50/50 dark:bg-green-950/20",
+                          )}
+                        >
+                          <Avatar className="h-9 w-9 flex-shrink-0">
+                            <AvatarFallback className="text-xs">{slot.pmInitials}</AvatarFallback>
+                          </Avatar>
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center justify-between gap-2">
+                              <span className="font-medium text-sm">{slot.pm}</span>
+                              {slot.recommended && (
+                                <Badge variant="outline" className="text-[10px] border-green-300 text-green-700 dark:text-green-400">
+                                  Best match
+                                </Badge>
+                              )}
+                            </div>
+                            <div className="flex items-center gap-2 text-sm">
+                              <CalendarDays className="h-3 w-3 text-muted-foreground" />
+                              <span>{slot.date}, {slot.time}</span>
+                            </div>
+                            <div className="flex items-center gap-2 text-xs text-muted-foreground mt-0.5">
+                              <MapPin className="h-3 w-3" />
+                              <span>{slot.distance} away</span>
+                              <span>&middot;</span>
+                              <span>{slot.reason}</span>
+                            </div>
+                          </div>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  <button
+                    onClick={() => setManualMode(true)}
+                    className="text-sm text-muted-foreground hover:text-foreground underline underline-offset-4"
+                  >
+                    Override: pick PM &amp; time manually
+                  </button>
+                </>
+              ) : (
+                <>
+                  {/* Manual override */}
+                  <div className="space-y-4">
+                    <div className="space-y-2">
+                      <Label>Project Manager</Label>
+                      <Select>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select PM…" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="mike">Mike Torres</SelectItem>
+                          <SelectItem value="jake">Jake Rivera</SelectItem>
+                          <SelectItem value="anna">Anna Kowalski</SelectItem>
+                          <SelectItem value="chris">Chris Park</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label>Date</Label>
+                        <Input type="date" />
+                      </div>
+                      <div className="space-y-2">
+                        <Label>Time</Label>
+                        <Input type="time" />
+                      </div>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => setManualMode(false)}
+                    className="text-sm text-muted-foreground hover:text-foreground underline underline-offset-4"
+                  >
+                    Back to recommended slots
+                  </button>
+                </>
+              )}
+
+              <Separator />
+              <div className="flex gap-2">
+                <Button variant="outline" className="flex-1" onClick={() => setStep("info")}>
+                  Back
+                </Button>
+                <Button className="flex-1">
+                  Book Inspection
+                </Button>
+              </div>
             </div>
-          </div>
-          <div className="space-y-2">
-            <Label>Phone</Label>
-            <Input defaultValue={thread.phone} />
-          </div>
-          <div className="space-y-2">
-            <Label>Property address</Label>
-            <Input placeholder="123 Main St" />
-          </div>
-          <div className="grid grid-cols-3 gap-4">
-            <div className="space-y-2">
-              <Label>City</Label>
-              <Input placeholder="City" />
-            </div>
-            <div className="space-y-2">
-              <Label>State</Label>
-              <Input defaultValue="CO" />
-            </div>
-            <div className="space-y-2">
-              <Label>Zip</Label>
-              <Input placeholder="80903" />
-            </div>
-          </div>
-          <div className="space-y-2">
-            <Label>What do they need?</Label>
-            <Textarea placeholder="Roof leak, storm damage, gutters, etc." rows={3} />
-          </div>
-          <Separator />
-          <div className="space-y-2">
-            <Label>Lead source</Label>
-            <Select defaultValue={thread.source ?? ""}>
-              <SelectTrigger>
-                <SelectValue placeholder="Select source…" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="Google Ads — Roof Repair">Google Ads — Roof Repair</SelectItem>
-                <SelectItem value="Nextdoor Ad — Hail Season">Nextdoor Ad — Hail Season</SelectItem>
-                <SelectItem value="Yard Sign — Briargate">Yard Sign — Briargate</SelectItem>
-                <SelectItem value="Yard Sign — Falcon">Yard Sign — Falcon</SelectItem>
-                <SelectItem value="Referral">Referral</SelectItem>
-                <SelectItem value="Website Form">Website Form</SelectItem>
-                <SelectItem value="Door Knock">Door Knock</SelectItem>
-              </SelectContent>
-            </Select>
-            {thread.source && (
-              <p className="text-xs text-muted-foreground flex items-center gap-1">
-                <Megaphone className="h-3 w-3" />
-                Auto-detected from tracking number {thread.trackingNumber}
-              </p>
-            )}
-          </div>
-          <Button className="w-full">Create Lead</Button>
-        </div>
+          </>
+        )}
       </SheetContent>
     </Sheet>
   );
@@ -724,11 +880,11 @@ export function ConversationsMockup() {
         onDecline={() => setShowIncoming(false)}
       />
     )}
-    <ResizablePanelGroup orientation="horizontal" className="h-full min-h-[700px] flex-row rounded-lg border">
+    <ResizablePanelGroup orientation="horizontal" className="h-[calc(100vh-12rem)] flex-row rounded-lg border">
       {/* Thread list */}
       <ResizablePanel defaultSize="35%" minSize="20%" maxSize="45%">
-        <div className="flex flex-col h-full">
-          <div className="p-4 space-y-3 border-b">
+        <div className="flex flex-col h-full overflow-hidden">
+          <div className="flex-shrink-0 p-4 space-y-3 border-b">
             <div className="flex items-center justify-between">
               <h2 className="text-base font-semibold">Conversations</h2>
               <Button size="sm" variant="default">
@@ -781,9 +937,9 @@ export function ConversationsMockup() {
 
       {/* Message timeline */}
       <ResizablePanel defaultSize="40%" minSize="30%">
-        <div className="flex flex-col h-full">
+        <div className="flex flex-col h-full overflow-hidden">
           {/* Conversation header */}
-          <div className="p-4 border-b">
+          <div className="flex-shrink-0 p-4 border-b">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
                 <Avatar className="h-9 w-9">
@@ -828,7 +984,7 @@ export function ConversationsMockup() {
           </ScrollArea>
 
           {/* Compose area */}
-          <div className="p-4 border-t">
+          <div className="flex-shrink-0 p-4 border-t">
             <div className="flex gap-2">
               <Input placeholder="Type a message…" className="flex-1" />
               <Button>Send</Button>
@@ -841,8 +997,8 @@ export function ConversationsMockup() {
 
       {/* Customer context panel */}
       <ResizablePanel defaultSize="25%" minSize="20%" maxSize="35%">
-        <div className="flex flex-col h-full">
-          <div className="p-4 border-b">
+        <div className="flex flex-col h-full overflow-hidden">
+          <div className="flex-shrink-0 p-4 border-b">
             <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Customer</h3>
           </div>
           <ScrollArea className="flex-1">
