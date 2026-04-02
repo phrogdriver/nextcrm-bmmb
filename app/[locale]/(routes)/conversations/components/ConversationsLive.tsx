@@ -418,7 +418,7 @@ function NewConversationSheet({
 // ── Main Component ───────────────────────────────────────
 
 export function ConversationsLive({ initialConversations }: Props) {
-  const { dial, callState } = useTwilio();
+  const { dial, callState, onNewMessage } = useTwilio();
 
   const [conversations, setConversations] = useState(initialConversations);
   const [selectedId, setSelectedId] = useState<string | null>(initialConversations[0]?.id ?? null);
@@ -460,6 +460,37 @@ export function ConversationsLive({ initialConversations }: Props) {
   useEffect(() => {
     if (selectedId) loadDetail(selectedId);
   }, [selectedId, loadDetail]);
+
+  // Real-time: listen for new messages from Twilio Conversations SDK
+  useEffect(() => {
+    const unsubscribe = onNewMessage((event) => {
+      // If the message is for the currently selected conversation, add it to the list
+      if (detail?.twilioConversationSid === event.conversationSid) {
+        setMessages((prev) => {
+          // Avoid duplicates
+          if (prev.some((m) => m.twilioMessageSid === event.message.sid)) return prev;
+          return [
+            ...prev,
+            {
+              id: event.message.sid,
+              conversationId: detail.id,
+              direction: event.message.author.startsWith("+") ? "inbound" : "outbound",
+              body: event.message.body,
+              mediaUrls: [],
+              twilioStatus: null,
+              twilioMessageSid: event.message.sid,
+              sentBy: null,
+              sent_by_user: null,
+              createdAt: event.message.dateCreated,
+            } as MessageItem,
+          ];
+        });
+      }
+      // Refresh the conversation list to update timestamps
+      refreshList();
+    });
+    return unsubscribe;
+  }, [onNewMessage, detail, refreshList]);
 
   // Search
   const handleSearch = useCallback(async () => {

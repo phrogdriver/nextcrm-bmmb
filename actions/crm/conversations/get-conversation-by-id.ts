@@ -9,6 +9,7 @@ export type ConversationDetail = {
   phoneNumber: string | null;
   subject: string | null;
   status: "open" | "closed";
+  twilioConversationSid: string | null;
   lastActivityAt: Date;
   createdAt: Date;
   contactId: string | null;

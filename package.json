@@ -64,6 +64,7 @@
     "@tiptap/react": "^3.20.5",
     "@tiptap/starter-kit": "^3.20.5",
     "@tremor/react": "^3.18.7",
+    "@twilio/conversations": "^3.0.0",
     "@twilio/voice-sdk": "^2.18.1",
     "@upstash/ratelimit": "^2.0.8",
     "@upstash/redis": "^1.37.0",

@@ -10,6 +10,9 @@ import {
   type ReactNode,
 } from "react";
 import { Device, Call } from "@twilio/voice-sdk";
+import { Client as ConversationsClient, type Conversation, type Message } from "@twilio/conversations";
+
+// ── Types ────────────────────────────────────────────────
 
 type CallState = {
   status: "idle" | "ringing" | "connecting" | "in-progress" | "completed";
@@ -19,7 +22,18 @@ type CallState = {
   startedAt: Date | null;
 };
 
+type NewMessageEvent = {
+  conversationSid: string;
+  message: {
+    sid: string;
+    author: string;
+    body: string;
+    dateCreated: Date;
+  };
+};
+
 type TwilioContextType = {
+  // Voice
   isReady: boolean;
   callState: CallState;
   accept: () => void;
@@ -28,6 +42,9 @@ type TwilioContextType = {
   dial: (phoneNumber: string) => void;
   mute: (muted: boolean) => void;
   isMuted: boolean;
+  // Messaging
+  isMessagingReady: boolean;
+  onNewMessage: (handler: (event: NewMessageEvent) => void) => () => void;
 };
 
 const INITIAL_CALL_STATE: CallState = {
@@ -47,22 +64,31 @@ const TwilioContext = createContext<TwilioContextType>({
   dial: () => {},
   mute: () => {},
   isMuted: false,
+  isMessagingReady: false,
+  onNewMessage: () => () => {},
 });
 
 export function useTwilio() {
   return useContext(TwilioContext);
 }
 
+export type { NewMessageEvent };
+
+// ── Provider ─────────────────────────────────────────────
+
 export function TwilioProvider({ children }: { children: ReactNode }) {
   const deviceRef = useRef<Device | null>(null);
   const activeCallRef = useRef<Call | null>(null);
   const incomingCallRef = useRef<Call | null>(null);
+  const conversationsClientRef = useRef<ConversationsClient | null>(null);
+  const messageHandlersRef = useRef<Set<(event: NewMessageEvent) => void>>(new Set());
 
   const [isReady, setIsReady] = useState(false);
+  const [isMessagingReady, setIsMessagingReady] = useState(false);
   const [isMuted, setIsMuted] = useState(false);
   const [callState, setCallState] = useState<CallState>(INITIAL_CALL_STATE);
 
-  // Fetch token and initialize device
+  // Fetch token and initialize both Voice Device and Conversations Client
   useEffect(() => {
     let mounted = true;
 
@@ -74,6 +100,7 @@ export function TwilioProvider({ children }: { children: ReactNode }) {
         const { token } = await res.json();
         if (!mounted) return;
 
+        // ── Voice SDK ──
         const device = new Device(token, {
           logLevel: 1,
           codecPreferences: [Call.Codec.Opus, Call.Codec.PCMU],
@@ -113,6 +140,34 @@ export function TwilioProvider({ children }: { children: ReactNode }) {
 
         await device.register();
         deviceRef.current = device;
+
+        // ── Conversations SDK ──
+        const convClient = new ConversationsClient(token);
+
+        convClient.on("stateChanged", (state) => {
+          if (state === "initialized" && mounted) {
+            setIsMessagingReady(true);
+          }
+        });
+
+        convClient.on("messageAdded", (message: Message) => {
+          const event: NewMessageEvent = {
+            conversationSid: message.conversation.sid,
+            message: {
+              sid: message.sid,
+              author: message.author ?? "",
+              body: message.body ?? "",
+              dateCreated: message.dateCreated ?? new Date(),
+            },
+          };
+          messageHandlersRef.current.forEach((handler) => handler(event));
+        });
+
+        convClient.on("connectionError", (error) => {
+          console.error("Conversations connection error:", error);
+        });
+
+        conversationsClientRef.current = convClient;
       } catch (err) {
         console.error("Failed to initialize Twilio:", err);
       }
@@ -123,8 +178,11 @@ export function TwilioProvider({ children }: { children: ReactNode }) {
     return () => {
       mounted = false;
       deviceRef.current?.destroy();
+      conversationsClientRef.current?.shutdown();
     };
   }, []);
+
+  // ── Voice controls ──
 
   const setupCallEvents = useCallback((call: Call, direction: "inbound" | "outbound") => {
     call.on("accept", () => {
@@ -152,7 +210,6 @@ export function TwilioProvider({ children }: { children: ReactNode }) {
   const accept = useCallback(() => {
     const call = incomingCallRef.current;
     if (!call) return;
-
     call.accept();
     activeCallRef.current = call;
     incomingCallRef.current = null;
@@ -162,7 +219,6 @@ export function TwilioProvider({ children }: { children: ReactNode }) {
   const reject = useCallback(() => {
     const call = incomingCallRef.current;
     if (!call) return;
-
     call.reject();
     incomingCallRef.current = null;
     setCallState(INITIAL_CALL_STATE);
@@ -171,7 +227,6 @@ export function TwilioProvider({ children }: { children: ReactNode }) {
   const hangup = useCallback(() => {
     const call = activeCallRef.current ?? incomingCallRef.current;
     if (!call) return;
-
     call.disconnect();
     activeCallRef.current = null;
     incomingCallRef.current = null;
@@ -196,10 +251,8 @@ export function TwilioProvider({ children }: { children: ReactNode }) {
         const call = await device.connect({
           params: { To: phoneNumber },
         });
-
         activeCallRef.current = call;
         setupCallEvents(call, "outbound");
-
         setCallState((prev) => ({
           ...prev,
           status: "ringing",
@@ -221,9 +274,32 @@ export function TwilioProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
+  // ── Messaging: subscribe to new messages ──
+
+  const onNewMessage = useCallback(
+    (handler: (event: NewMessageEvent) => void) => {
+      messageHandlersRef.current.add(handler);
+      return () => {
+        messageHandlersRef.current.delete(handler);
+      };
+    },
+    []
+  );
+
   return (
     <TwilioContext.Provider
-      value={{ isReady, callState, accept, reject, hangup, dial, mute, isMuted }}
+      value={{
+        isReady,
+        callState,
+        accept,
+        reject,
+        hangup,
+        dial,
+        mute,
+        isMuted,
+        isMessagingReady,
+        onNewMessage,
+      }}
     >
       {children}
     </TwilioContext.Provider>

@@ -6,82 +6,80 @@ import { twilioClient } from "@/lib/twilio/client";
 import { revalidatePath } from "next/cache";
 
 /**
- * Send an outbound SMS. The "from" number is determined by priority:
- * 1. The number the customer last called/texted (from the most recent inbound message)
- * 2. User-selected override (data.fromNumber)
- * 3. TWILIO_DEFAULT_NUMBER
+ * Send an outbound SMS through Twilio Conversations API.
+ * Creates or reuses a Twilio Conversation, then adds a message.
+ * The message is synced back to our DB via the Conversations webhook.
  */
 export const sendSms = async (data: {
   conversationId: string;
   body: string;
-  fromNumber?: string; // optional user override
 }) => {
   try {
     const session = await getServerSession(authOptions);
     if (!session) return { error: "Unauthorized" };
 
+    const serviceSid = process.env.TWILIO_CONVERSATIONS_SERVICE_SID;
+    if (!serviceSid) return { error: "Conversations service not configured" };
+
     const conversation = await (prismadb as any).crm_Conversations.findUnique({
       where: { id: data.conversationId, deletedAt: null },
-      include: { trackingNumber: true },
     });
     if (!conversation) return { error: "Conversation not found" };
     if (!conversation.phoneNumber) return { error: "No phone number on conversation" };
 
-    // Priority 1: last Twilio number the customer contacted
-    let fromNumber: string | null = null;
+    let twilioConvSid = conversation.twilioConversationSid;
 
-    const lastInbound = await (prismadb as any).crm_Messages.findFirst({
-      where: {
-        conversationId: data.conversationId,
-        direction: "inbound",
-        twilioFrom: { not: null },
-      },
-      orderBy: { createdAt: "desc" },
-      select: { twilioFrom: true },
-    });
+    // Create a Twilio Conversation if one doesn't exist yet
+    if (!twilioConvSid) {
+      const twilioConv = await twilioClient.conversations.v1
+        .services(serviceSid)
+        .conversations.create({
+          friendlyName: `CRM: ${conversation.phoneNumber}`,
+        });
 
-    if (lastInbound?.twilioFrom) {
-      fromNumber = lastInbound.twilioFrom;
+      twilioConvSid = twilioConv.sid;
+
+      // Add the customer as an SMS participant
+      await twilioClient.conversations.v1
+        .services(serviceSid)
+        .conversations(twilioConvSid)
+        .participants.create({
+          "messagingBinding.address": conversation.phoneNumber,
+          "messagingBinding.proxyAddress": process.env.TWILIO_DEFAULT_NUMBER!,
+        });
+
+      // Add the CRM agent as a chat participant
+      await twilioClient.conversations.v1
+        .services(serviceSid)
+        .conversations(twilioConvSid)
+        .participants.create({
+          identity: "crm-agent",
+        });
+
+      // Link the Twilio Conversation to our local record
+      await (prismadb as any).crm_Conversations.update({
+        where: { id: data.conversationId },
+        data: { twilioConversationSid: twilioConvSid },
+      });
     }
 
-    // Priority 2: user-selected override
-    if (data.fromNumber) {
-      fromNumber = data.fromNumber;
-    }
+    // Send the message through the Twilio Conversation
+    const twilioMessage = await twilioClient.conversations.v1
+      .services(serviceSid)
+      .conversations(twilioConvSid)
+      .messages.create({
+        author: "crm-agent",
+        body: data.body,
+      });
 
-    // Priority 3: tracking number on conversation
-    if (!fromNumber && conversation.trackingNumber?.phoneNumber) {
-      fromNumber = conversation.trackingNumber.phoneNumber;
-    }
-
-    // Priority 4: default number
-    if (!fromNumber) {
-      fromNumber = process.env.TWILIO_DEFAULT_NUMBER ?? null;
-    }
-
-    if (!fromNumber) return { error: "No from number available" };
-
-    // Send via Twilio — use messaging service if available for A2P compliance
-    const messagingServiceSid = process.env.TWILIO_MESSAGING_SERVICE_SID;
-
-    const twilioMessage = await twilioClient.messages.create({
-      body: data.body,
-      to: conversation.phoneNumber,
-      ...(messagingServiceSid
-        ? { messagingServiceSid, from: fromNumber }
-        : { from: fromNumber }),
-      statusCallback: `${process.env.NEXT_PUBLIC_APP_URL}/api/twilio/sms/status`,
-    });
-
-    // Store the message
+    // Store locally (the webhook will also try, but we do it here for immediate UI update)
     const message = await (prismadb as any).crm_Messages.create({
       data: {
         conversationId: data.conversationId,
         direction: "outbound",
         body: data.body,
         twilioMessageSid: twilioMessage.sid,
-        twilioStatus: twilioMessage.status,
-        twilioFrom: fromNumber,
+        twilioStatus: "sent",
         sentBy: session.user.id,
       },
     });

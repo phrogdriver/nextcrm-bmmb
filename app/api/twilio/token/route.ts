@@ -5,6 +5,7 @@ import twilio from "twilio";
 
 const AccessToken = twilio.jwt.AccessToken;
 const VoiceGrant = AccessToken.VoiceGrant;
+const ChatGrant = AccessToken.ChatGrant;
 
 export async function POST() {
   const session = await getServerSession(authOptions);
@@ -16,23 +17,33 @@ export async function POST() {
   const apiKeySid = process.env.TWILIO_API_KEY_SID;
   const apiKeySecret = process.env.TWILIO_API_KEY_SECRET;
   const twimlAppSid = process.env.TWILIO_TWIML_APP_SID;
+  const conversationsServiceSid = process.env.TWILIO_CONVERSATIONS_SERVICE_SID;
 
-  if (!accountSid || !apiKeySid || !apiKeySecret || !twimlAppSid) {
+  if (!accountSid || !apiKeySid || !apiKeySecret) {
     return NextResponse.json({ error: "Twilio not configured" }, { status: 500 });
   }
 
-  // AccessToken uses API key SID + secret (not auth token)
   const token = new AccessToken(accountSid, apiKeySid, apiKeySecret, {
     identity: "crm-agent",
     ttl: 3600,
   });
 
-  const voiceGrant = new VoiceGrant({
-    outgoingApplicationSid: twimlAppSid,
-    incomingAllow: true,
-  });
+  // Voice grant (for browser calling)
+  if (twimlAppSid) {
+    const voiceGrant = new VoiceGrant({
+      outgoingApplicationSid: twimlAppSid,
+      incomingAllow: true,
+    });
+    token.addGrant(voiceGrant);
+  }
 
-  token.addGrant(voiceGrant);
+  // Conversations grant (for real-time messaging)
+  if (conversationsServiceSid) {
+    const chatGrant = new ChatGrant({
+      serviceSid: conversationsServiceSid,
+    });
+    token.addGrant(chatGrant);
+  }
 
   return NextResponse.json({
     token: token.toJwt(),

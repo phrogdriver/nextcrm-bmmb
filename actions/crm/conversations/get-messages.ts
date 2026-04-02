@@ -10,6 +10,7 @@ export type MessageItem = {
   body: string;
   mediaUrls: string[];
   twilioStatus: string | null;
+  twilioMessageSid: string | null;
   sentBy: string | null;
   sent_by_user: { id: string; name: string | null } | null;
   createdAt: Date;

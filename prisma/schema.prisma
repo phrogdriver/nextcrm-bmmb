@@ -717,6 +717,9 @@ model crm_Conversations {
   contactId       String?   @db.Uuid
   leadId          String?   @db.Uuid
 
+  // Twilio Conversations API
+  twilioConversationSid  String?  @unique  // CH... SID linking to Twilio Conversation
+
   // Twilio call fields (populated for phone channel)
   twilioCallSid       String?   @unique
   twilioCallStatus    String?   // ringing, in-progress, completed, no-answer, busy, failed
@@ -749,6 +752,7 @@ model crm_Conversations {
   @@index([status])
   @@index([deletedAt])
   @@index([twilioCallSid])
+  @@index([twilioConversationSid])
   @@index([trackingNumberId])
 }
 
