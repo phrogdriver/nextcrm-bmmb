@@ -15,7 +15,6 @@ export async function POST(request: Request) {
   }
 
   const callSid = body.CallSid;
-  const direction = body.Direction; // inbound, outbound-dial, outbound-api
 
   // Browser-originated calls come via the TwiML App with Direction = undefined
   // or "outbound-api". Inbound calls from PSTN have Direction = "inbound".
@@ -55,11 +54,15 @@ async function handleOutbound(to: string, callSid: string) {
   const callerId = conversation?.trackingNumber?.phoneNumber
     ?? process.env.TWILIO_DEFAULT_NUMBER!;
 
+  const statusCallback = `${process.env.NEXT_PUBLIC_APP_URL}/api/twilio/voice/status`;
+
   const twiml = new VoiceResponse();
   const dial = twiml.dial({
     callerId,
     timeout: 30,
-  });
+    statusCallback,
+    statusCallbackEvent: "initiated ringing answered completed",
+  } as any);
   dial.number(to);
 
   return new NextResponse(twiml.toString(), {
@@ -132,11 +135,15 @@ async function handleInbound(
   }
 
   // Ring browser clients
+  const statusCallback = `${process.env.NEXT_PUBLIC_APP_URL}/api/twilio/voice/status`;
+
   const twiml = new VoiceResponse();
   const dial = twiml.dial({
     callerId: from,
     timeout: 30,
-  });
+    statusCallback,
+    statusCallbackEvent: "initiated ringing answered completed",
+  } as any);
   dial.client("crm-agent");
 
   // If nobody answers, say a message and hang up
