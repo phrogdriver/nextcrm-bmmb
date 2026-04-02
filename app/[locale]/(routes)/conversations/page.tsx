@@ -7,5 +7,9 @@ export default async function ConversationsPage() {
   const session = await getServerSession(authOptions);
   if (!session) return redirect("/sign-in");
 
-  return <ConversationsMockup />;
+  return (
+    <div className="-my-5 -mx-4 flex-1 overflow-hidden">
+      <ConversationsMockup />
+    </div>
+  );
 }

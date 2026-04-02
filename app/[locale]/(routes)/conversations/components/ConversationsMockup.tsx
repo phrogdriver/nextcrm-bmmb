@@ -880,7 +880,7 @@ export function ConversationsMockup() {
         onDecline={() => setShowIncoming(false)}
       />
     )}
-    <ResizablePanelGroup orientation="horizontal" className="h-[calc(100vh-12rem)] flex-row rounded-lg border">
+    <ResizablePanelGroup orientation="horizontal" className="h-full flex-row border-t">
       {/* Thread list */}
       <ResizablePanel defaultSize="35%" minSize="20%" maxSize="45%">
         <div className="flex flex-col h-full overflow-hidden">
