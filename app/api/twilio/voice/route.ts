@@ -146,10 +146,6 @@ async function handleInbound(
   } as any);
   dial.client("crm-agent");
 
-  // If nobody answers, say a message and hang up
-  twiml.say("Sorry, no one is available to take your call. Please leave a message or try again later.");
-  twiml.hangup();
-
   return new NextResponse(twiml.toString(), {
     headers: { "Content-Type": "text/xml" },
   });
