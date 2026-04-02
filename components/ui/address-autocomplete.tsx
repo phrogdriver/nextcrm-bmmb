@@ -118,20 +118,23 @@ export function AddressAutocomplete({
     `;
     document.head.appendChild(style);
 
-    // Radix Dialog's focus trap intercepts mousedown outside the dialog content.
-    // The pac-container is outside the dialog, so clicks get swallowed.
-    // This handler stops propagation on pac-container clicks before Radix sees them.
-    const handleMouseDown = (e: MouseEvent) => {
+    // Radix Dialog closes on pointerdown outside dialog content.
+    // The pac-container renders as a portal outside the dialog, so clicks
+    // trigger the dismiss handler. Block both pointerdown and mousedown
+    // on pac-container before Radix sees them.
+    const handlePointerEvent = (e: Event) => {
       const target = e.target as HTMLElement;
       if (target.closest(".pac-container")) {
         e.stopPropagation();
       }
     };
-    document.addEventListener("mousedown", handleMouseDown, true);
+    document.addEventListener("pointerdown", handlePointerEvent, true);
+    document.addEventListener("mousedown", handlePointerEvent, true);
 
     return () => {
       document.head.removeChild(style);
-      document.removeEventListener("mousedown", handleMouseDown, true);
+      document.removeEventListener("pointerdown", handlePointerEvent, true);
+      document.removeEventListener("mousedown", handlePointerEvent, true);
     };
   }, []);
 
