@@ -2,7 +2,7 @@
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prismadb } from "@/lib/prisma";
-import { twilioClient, TWILIO_DEFAULT_NUMBER } from "@/lib/twilio/client";
+import { twilioClient } from "@/lib/twilio/client";
 import { revalidatePath } from "next/cache";
 
 export const sendSms = async (data: {
@@ -20,14 +20,14 @@ export const sendSms = async (data: {
     if (!conversation) return { error: "Conversation not found" };
     if (!conversation.phoneNumber) return { error: "No phone number on conversation" };
 
-    // Use the tracking number that originated this conversation, or fall back to default
-    const fromNumber = conversation.trackingNumber?.phoneNumber ?? TWILIO_DEFAULT_NUMBER;
+    const messagingServiceSid = process.env.TWILIO_MESSAGING_SERVICE_SID;
+    if (!messagingServiceSid) return { error: "Messaging service not configured" };
 
-    // Send via Twilio
+    // Send via Twilio Messaging Service (handles A2P compliance and number selection)
     const twilioMessage = await twilioClient.messages.create({
       body: data.body,
       to: conversation.phoneNumber,
-      from: fromNumber,
+      messagingServiceSid,
       statusCallback: `${process.env.NEXT_PUBLIC_APP_URL}/api/twilio/sms/status`,
     });
 
