@@ -69,5 +69,9 @@ export async function POST(request: Request) {
     }
   }
 
-  return new NextResponse("OK", { status: 200 });
+  // Return valid TwiML — Twilio may call this as an action URL
+  return new NextResponse(
+    '<?xml version="1.0" encoding="UTF-8"?><Response><Hangup/></Response>',
+    { headers: { "Content-Type": "text/xml" } }
+  );
 }

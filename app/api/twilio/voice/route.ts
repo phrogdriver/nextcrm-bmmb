@@ -15,20 +15,19 @@ export async function POST(request: Request) {
   }
 
   const callSid = body.CallSid;
-  const statusCallback = `${process.env.NEXT_PUBLIC_APP_URL}/api/twilio/voice/status`;
 
   // If "To" is a phone number, this is an outbound call from the browser
   const toNumber = body.To;
   const isOutbound = toNumber && /^\+?\d{10,15}$/.test(toNumber.replace(/\D/g, ""));
 
   if (isOutbound) {
-    return handleOutbound(toNumber, callSid, statusCallback);
+    return handleOutbound(toNumber, callSid);
   }
 
-  return handleInbound(body, callSid, statusCallback);
+  return handleInbound(body, callSid);
 }
 
-async function handleOutbound(to: string, callSid: string, statusCallback: string) {
+async function handleOutbound(to: string, callSid: string) {
   // Update the conversation that was pre-created by placeCall action
   const conversation = await (prismadb as any).crm_Conversations.findFirst({
     where: {
@@ -56,7 +55,6 @@ async function handleOutbound(to: string, callSid: string, statusCallback: strin
   const dial = twiml.dial({
     callerId,
     timeout: 30,
-    action: statusCallback,
   });
   dial.number(to);
 
@@ -68,7 +66,6 @@ async function handleOutbound(to: string, callSid: string, statusCallback: strin
 async function handleInbound(
   body: Record<string, string>,
   callSid: string,
-  statusCallback: string
 ) {
   const from = body.From;
   const to = body.To;
@@ -135,9 +132,12 @@ async function handleInbound(
   const dial = twiml.dial({
     callerId: from,
     timeout: 30,
-    action: statusCallback,
   });
   dial.client("crm-agent");
+
+  // If nobody answers, say a message and hang up
+  twiml.say("Sorry, no one is available to take your call. Please leave a message or try again later.");
+  twiml.hangup();
 
   return new NextResponse(twiml.toString(), {
     headers: { "Content-Type": "text/xml" },
