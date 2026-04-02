@@ -20,8 +20,8 @@ export function ConversationsLayout({ initialConversations }: Props) {
   );
 
   return (
-    <ResizablePanelGroup orientation="horizontal" className="min-h-[600px] rounded-lg border">
-      <ResizablePanel defaultSize={35} minSize={25} maxSize={50}>
+    <ResizablePanelGroup orientation="horizontal" className="h-full min-h-[600px] flex-row rounded-lg border">
+      <ResizablePanel defaultSize="35%" minSize="25%" maxSize="50%">
         <ConversationsList
           initialConversations={initialConversations}
           selectedId={selectedId}
@@ -29,7 +29,7 @@ export function ConversationsLayout({ initialConversations }: Props) {
         />
       </ResizablePanel>
       <ResizableHandle withHandle />
-      <ResizablePanel defaultSize={65} minSize={40}>
+      <ResizablePanel defaultSize="65%" minSize="40%">
         {selectedId ? (
           <ConversationDetail conversationId={selectedId} />
         ) : (
