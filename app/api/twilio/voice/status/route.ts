@@ -11,9 +11,15 @@ export async function POST(request: Request) {
     return new NextResponse("Forbidden", { status: 403 });
   }
 
+  // Log all params from Twilio for debugging
+  console.log("[voice/status] Twilio params:", JSON.stringify(body));
+
   const callSid = body.CallSid;
-  const callStatus = body.CallStatus; // completed, no-answer, busy, failed, canceled
-  const callDuration = body.CallDuration ? parseInt(body.CallDuration, 10) : null;
+  // action URL on Dial sends DialCallStatus for the dialed leg
+  const callStatus = body.DialCallStatus ?? body.CallStatus;
+  const callDuration = (body.DialCallDuration ?? body.CallDuration)
+    ? parseInt(body.DialCallDuration ?? body.CallDuration, 10)
+    : null;
   const recordingUrl = body.RecordingUrl ?? null;
 
   if (!callSid) {
@@ -24,6 +30,8 @@ export async function POST(request: Request) {
   const conversation = await (prismadb as any).crm_Conversations.findFirst({
     where: { twilioCallSid: callSid },
   });
+
+  console.log("[voice/status] Found conversation:", conversation?.id, "callStatus:", callStatus, "duration:", callDuration);
 
   if (conversation) {
     await (prismadb as any).crm_Conversations.update({
