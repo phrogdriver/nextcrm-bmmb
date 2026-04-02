@@ -1,24 +1,19 @@
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { redirect } from "next/navigation";
-import { getTranslations } from "next-intl/server";
 import Container from "@/app/[locale]/(routes)/components/ui/Container";
-import { getConversations } from "@/actions/crm/conversations/get-conversations";
-import { ConversationsLayout } from "./components/ConversationsLayout";
+import { ConversationsMockup } from "./components/ConversationsMockup";
 
 export default async function ConversationsPage() {
   const session = await getServerSession(authOptions);
   if (!session) return redirect("/sign-in");
 
-  const t = await getTranslations("Conversations");
-  const { data: conversations } = await getConversations();
-
   return (
     <Container
-      title={t("title")}
-      description={t("description")}
+      title="Conversations"
+      description="Calls, SMS, and messages"
     >
-      <ConversationsLayout initialConversations={conversations} />
+      <ConversationsMockup />
     </Container>
   );
 }
