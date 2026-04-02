@@ -196,8 +196,13 @@ function ThreadItem({
             {thread.lastTime}
           </span>
         </div>
-        <div className="text-sm text-muted-foreground truncate mt-0.5">
-          {thread.phone}
+        <div className="flex items-center gap-2 mt-0.5">
+          <span className="text-sm text-muted-foreground truncate">{thread.phone}</span>
+          {thread.source && (
+            <span className="text-xs text-muted-foreground truncate hidden sm:inline">
+              &middot; {thread.source}
+            </span>
+          )}
         </div>
         <div className={cn("text-sm truncate mt-1", hasUnread ? "text-foreground font-medium" : "text-muted-foreground")}>
           {thread.lastMessage}
@@ -614,6 +619,10 @@ function IncomingCallNotification({
 
 export function ConversationsMockup() {
   const [selectedId, setSelectedId] = useState("1");
+  const [filter, setFilter] = useState<"all" | "open" | "closed">("open");
+  const filteredThreads = MOCK_THREADS.filter(
+    (t) => filter === "all" || t.status === filter
+  );
   const selected = MOCK_THREADS.find((t) => t.id === selectedId)!;
   const [showIncoming, setShowIncoming] = useState(false);
 
@@ -636,7 +645,7 @@ export function ConversationsMockup() {
     )}
     <ResizablePanelGroup orientation="horizontal" className="h-full min-h-[700px] flex-row rounded-lg border">
       {/* Thread list */}
-      <ResizablePanel defaultSize="25%" minSize="20%" maxSize="35%">
+      <ResizablePanel defaultSize="35%" minSize="20%" maxSize="45%">
         <div className="flex flex-col h-full">
           <div className="p-4 space-y-3 border-b">
             <div className="flex items-center justify-between">
@@ -650,9 +659,27 @@ export function ConversationsMockup() {
               <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
               <Input placeholder="Search…" className="pl-8" />
             </div>
+            <div className="flex gap-1">
+              {(["open", "closed", "all"] as const).map((f) => (
+                <Button
+                  key={f}
+                  size="sm"
+                  variant={filter === f ? "default" : "outline"}
+                  onClick={() => setFilter(f)}
+                  className="flex-1 capitalize text-xs h-8"
+                >
+                  {f}
+                  {f === "open" && (
+                    <span className="ml-1.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-destructive text-destructive-foreground text-[10px] px-1">
+                      {MOCK_THREADS.filter((t) => t.status === "open").length}
+                    </span>
+                  )}
+                </Button>
+              ))}
+            </div>
           </div>
           <ScrollArea className="flex-1">
-            {MOCK_THREADS.map((thread) => (
+            {filteredThreads.map((thread) => (
               <ThreadItem
                 key={thread.id}
                 thread={thread}
@@ -660,6 +687,11 @@ export function ConversationsMockup() {
                 onClick={() => setSelectedId(thread.id)}
               />
             ))}
+            {filteredThreads.length === 0 && (
+              <div className="p-8 text-center text-sm text-muted-foreground">
+                No {filter} conversations
+              </div>
+            )}
           </ScrollArea>
         </div>
       </ResizablePanel>
@@ -667,7 +699,7 @@ export function ConversationsMockup() {
       <ResizableHandle withHandle />
 
       {/* Message timeline */}
-      <ResizablePanel defaultSize="50%" minSize="35%">
+      <ResizablePanel defaultSize="40%" minSize="30%">
         <div className="flex flex-col h-full">
           {/* Conversation header */}
           <div className="p-4 border-b">
