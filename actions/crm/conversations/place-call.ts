@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prismadb } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
+import { normalizePhone } from "@/lib/twilio/normalize-phone";
 
 /**
  * Creates or updates a conversation for an outbound call.
@@ -17,6 +18,7 @@ export const placeCall = async (data: {
     const session = await getServerSession(authOptions);
     if (!session) return { error: "Unauthorized" };
 
+    const phone = normalizePhone(data.phoneNumber);
     let conversation;
 
     if (data.conversationId) {
@@ -32,7 +34,7 @@ export const placeCall = async (data: {
       });
     } else {
       // New outbound conversation
-      const digits = data.phoneNumber.replace(/\D/g, "").slice(-10);
+      const digits = phone.replace(/\D/g, "").slice(-10);
 
       // Try to match a contact or lead
       const contact = await (prismadb as any).crm_Contacts.findFirst({
@@ -54,7 +56,7 @@ export const placeCall = async (data: {
       conversation = await (prismadb as any).crm_Conversations.create({
         data: {
           channel: "phone",
-          phoneNumber: data.phoneNumber,
+          phoneNumber: phone,
           status: "open",
           callDirection: "outbound",
           twilioCallStatus: "initiating",

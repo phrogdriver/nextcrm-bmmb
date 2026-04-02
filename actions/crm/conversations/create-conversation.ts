@@ -4,6 +4,7 @@ import { authOptions } from "@/lib/auth";
 import { prismadb } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
 import { writeAuditLog } from "@/lib/audit-log";
+import { normalizePhone } from "@/lib/twilio/normalize-phone";
 
 export const createConversation = async (data: {
   channel: "phone" | "sms" | "chat";
@@ -16,10 +17,12 @@ export const createConversation = async (data: {
     const session = await getServerSession(authOptions);
     if (!session) return { error: "Unauthorized" };
 
+    const phone = data.phoneNumber ? normalizePhone(data.phoneNumber) : undefined;
+
     const conversation = await (prismadb as any).crm_Conversations.create({
       data: {
         channel: data.channel,
-        phoneNumber: data.phoneNumber || undefined,
+        phoneNumber: phone,
         subject: data.subject || undefined,
         contactId: data.contactId || undefined,
         leadId: data.leadId || undefined,
