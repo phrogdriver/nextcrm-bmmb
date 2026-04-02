@@ -8,10 +8,10 @@ import { CollapsibleCard } from "@/components/crm/CollapsibleCard";
 
 function SummaryBar() {
   const items = [
-    { label: "COMMITTED", value: "$12,840", sub: "Open POs" },
-    { label: "BILLED", value: "$9,650", sub: "Bills + Expenses" },
-    { label: "PAID OUT", value: "$8,400", sub: "Total disbursed", color: "text-destructive" },
-    { label: "VENDOR CREDITS", value: "$320", sub: "Applied to bills", color: "text-green-600" },
+    { label: "ORDERED", value: "$12,840" },
+    { label: "BILLED", value: "$9,650" },
+    { label: "EXPENSES", value: "$8,400", color: "text-destructive" },
+    { label: "VENDOR CREDIT", value: "$320", color: "text-green-600" },
   ];
 
   return (
@@ -23,9 +23,6 @@ function SummaryBar() {
           </div>
           <div className={`text-base font-medium font-mono ${item.color ?? ""}`}>
             {item.value}
-          </div>
-          <div className="text-[9px] uppercase tracking-wide text-muted-foreground mt-0.5">
-            {item.sub}
           </div>
         </div>
       ))}
