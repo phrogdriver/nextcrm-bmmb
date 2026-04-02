@@ -6,7 +6,7 @@ import { prismadb } from "@/lib/prisma";
  * Used by the job detail page.
  */
 export const getJob = async (jobId: string) => {
-  const data = await prismadb.crm_Opportunities.findFirst({
+  const data = await (prismadb as any).crm_Opportunities.findFirst({
     where: {
       id: jobId,
       deletedAt: null,
@@ -82,6 +82,15 @@ export const getJob = async (jobId: string) => {
         include: {
           user: {
             select: { id: true, name: true },
+          },
+        },
+      },
+      appointments: {
+        where: { deletedAt: null },
+        orderBy: { start_date: "asc" },
+        include: {
+          assigned_user: {
+            select: { id: true, name: true, avatar: true },
           },
         },
       },

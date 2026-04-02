@@ -325,6 +325,7 @@ model crm_Opportunities {
   embedding            crm_Embeddings_Opportunities?
   payments             crm_Payments[]
   stage_transitions    crm_Stage_Transitions[]
+  appointments         crm_Appointments[]
   deletedAt            DateTime?
   deletedBy            String?   @db.Uuid
 
@@ -1060,6 +1061,8 @@ model Users {
   superintendent_jobs            crm_Opportunities[]  @relation("job_superintendent")
   stage_transitions              crm_Stage_Transitions[]
   assigned_invoices              Invoices[]            @relation("assigned_invoices")
+  assigned_appointments          crm_Appointments[]    @relation("appointment_assigned_to")
+  created_appointments           crm_Appointments[]    @relation("appointment_created_by")
 
   @@index([email])
   @@index([userStatus])
@@ -1259,6 +1262,45 @@ model crm_Stage_Transitions {
   @@index([transitioned_at])
   @@index([transitioned_by])
   @@index([job_id, transitioned_at])
+}
+
+model crm_Appointments {
+  id              String                @id @default(uuid()) @db.Uuid
+  job_id          String                @db.Uuid
+  title           String                // "Inspection", "Build Day", "Final Walkthrough", etc.
+  type            String?               // inspection, build, walkthrough, adjuster, other
+  status          crm_Appointment_Status @default(SCHEDULED)
+  start_date      DateTime
+  end_date        DateTime?
+  all_day         Boolean               @default(false)
+  location        String?               // defaults to property address
+  assigned_to     String?               @db.Uuid   // primary person/crew lead
+  crew_name       String?               // "Peak Roofing Crew", etc.
+  notes           String?
+  createdBy       String?               @db.Uuid
+  createdAt       DateTime              @default(now())
+  updatedAt       DateTime?             @updatedAt
+  deletedAt       DateTime?
+  deletedBy       String?               @db.Uuid
+
+  job             crm_Opportunities     @relation(fields: [job_id], references: [id])
+  assigned_user   Users?                @relation("appointment_assigned_to", fields: [assigned_to], references: [id])
+  created_by_user Users?                @relation("appointment_created_by", fields: [createdBy], references: [id])
+
+  @@index([job_id])
+  @@index([assigned_to])
+  @@index([start_date])
+  @@index([status])
+  @@index([job_id, start_date])
+  @@index([deletedAt])
+}
+
+enum crm_Appointment_Status {
+  SCHEDULED
+  DISPATCHED
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
 }
 
 // ============================================

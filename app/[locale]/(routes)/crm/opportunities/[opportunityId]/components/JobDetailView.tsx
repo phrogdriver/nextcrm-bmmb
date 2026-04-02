@@ -108,7 +108,11 @@ export function JobDetailView({
               />
 
               {/* 3. Open: Appointments */}
-              <AppointmentsCard />
+              <AppointmentsCard
+                jobId={job.id}
+                appointments={job.appointments ?? []}
+                propertyAddress={propertyAddress}
+              />
 
               {/* 4. Open: Tasks */}
               <TasksCard />
