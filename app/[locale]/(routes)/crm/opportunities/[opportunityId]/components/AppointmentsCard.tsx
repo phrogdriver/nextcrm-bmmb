@@ -62,16 +62,15 @@ const STATUS_LABELS: Record<string, string> = {
 interface AppointmentsCardProps {
   jobId: string;
   appointments: Appointment[];
-  propertyAddress?: string;
 }
 
-export function AppointmentsCard({ jobId, appointments, propertyAddress }: AppointmentsCardProps) {
+export function AppointmentsCard({ jobId, appointments }: AppointmentsCardProps) {
   const router = useRouter();
   const [creating, setCreating] = useState(false);
   const [isPending, startTransition] = useTransition();
   const [formValues, setFormValues] = useState({
     title: "",
-    type: "other",
+    type: "",
     start_date: "",
     end_date: "",
     crew_name: "",
@@ -79,8 +78,8 @@ export function AppointmentsCard({ jobId, appointments, propertyAddress }: Appoi
   });
 
   const handleCreate = () => {
-    if (!formValues.title || !formValues.start_date) {
-      toast.error("Title and start date are required");
+    if (!formValues.title || !formValues.start_date || !formValues.type) {
+      toast.error("Title, type, and start date are required");
       return;
     }
 
@@ -91,7 +90,6 @@ export function AppointmentsCard({ jobId, appointments, propertyAddress }: Appoi
         type: formValues.type,
         start_date: new Date(formValues.start_date),
         end_date: formValues.end_date ? new Date(formValues.end_date) : undefined,
-        location: propertyAddress || undefined,
         crew_name: formValues.crew_name || undefined,
         notes: formValues.notes || undefined,
       });
@@ -101,7 +99,7 @@ export function AppointmentsCard({ jobId, appointments, propertyAddress }: Appoi
       } else {
         toast.success("Appointment scheduled");
         setCreating(false);
-        setFormValues({ title: "", type: "other", start_date: "", end_date: "", crew_name: "", notes: "" });
+        setFormValues({ title: "", type: "", start_date: "", end_date: "", crew_name: "", notes: "" });
         router.refresh();
       }
     });
@@ -187,7 +185,6 @@ export function AppointmentsCard({ jobId, appointments, propertyAddress }: Appoi
                           ? "All day"
                           : format(startDate, "h:mm a")}
                         {appt.end_date && ` – ${format(new Date(appt.end_date), "h:mm a")}`}
-                        {appt.location && ` · ${appt.location}`}
                       </div>
                       {(appt.assigned_user || appt.crew_name) && (
                         <div className="flex items-center gap-1.5 mt-1 text-xs text-primary">
@@ -231,11 +228,15 @@ export function AppointmentsCard({ jobId, appointments, propertyAddress }: Appoi
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="inspection">Inspection</SelectItem>
-                  <SelectItem value="adjuster">Adjuster Visit</SelectItem>
-                  <SelectItem value="build">Build Day</SelectItem>
-                  <SelectItem value="walkthrough">Final Walkthrough</SelectItem>
-                  <SelectItem value="other">Other</SelectItem>
+                  <SelectItem value="INSPECTION">Inspection</SelectItem>
+                  <SelectItem value="ADJUSTER">Adjuster Visit</SelectItem>
+                  <SelectItem value="SALES_VISIT">Sales Visit</SelectItem>
+                  <SelectItem value="PRE_CONSTRUCTION">Pre-Construction</SelectItem>
+                  <SelectItem value="BUILD">Build Day</SelectItem>
+                  <SelectItem value="DELIVERY">Delivery</SelectItem>
+                  <SelectItem value="FINAL_WALKTHROUGH">Final Walkthrough</SelectItem>
+                  <SelectItem value="WARRANTY">Warranty</SelectItem>
+                  <SelectItem value="OTHER">Other</SelectItem>
                 </SelectContent>
               </Select>
             </div>

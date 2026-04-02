@@ -7,11 +7,10 @@ import { revalidatePath } from "next/cache";
 export const createAppointment = async (data: {
   job_id: string;
   title: string;
-  type?: string;
+  type: string;
   start_date: Date;
   end_date?: Date;
   all_day?: boolean;
-  location?: string;
   assigned_to?: string;
   crew_name?: string;
   notes?: string;
@@ -23,6 +22,7 @@ export const createAppointment = async (data: {
     const appointment = await (prismadb as any).crm_Appointments.create({
       data: {
         ...data,
+        assigned_to: data.assigned_to || session.user.id,
         createdBy: session.user.id,
       },
     });

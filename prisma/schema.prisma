@@ -1786,35 +1786,47 @@ enum crm_Job_Task_Priority {
 }
 
 model crm_Appointments {
-  id              String                @id @default(uuid()) @db.Uuid
-  job_id          String                @db.Uuid
-  title           String                // "Inspection", "Build Day", "Final Walkthrough", etc.
-  type            String?               // inspection, build, walkthrough, adjuster, other
+  id              String                 @id @default(uuid()) @db.Uuid
+  job_id          String                 @db.Uuid
+  title           String
+  type            crm_Appointment_Type
   status          crm_Appointment_Status @default(SCHEDULED)
   start_date      DateTime
   end_date        DateTime?
-  all_day         Boolean               @default(false)
-  location        String?               // defaults to property address
-  assigned_to     String?               @db.Uuid   // primary person/crew lead
-  crew_name       String?               // "Peak Roofing Crew", etc.
+  all_day         Boolean                @default(false)
+  assigned_to     String                 @db.Uuid   // primary person/crew lead
+  crew_name       String?                // "Peak Roofing Crew", etc.
   notes           String?
-  createdBy       String?               @db.Uuid
-  createdAt       DateTime              @default(now())
-  updatedAt       DateTime?             @updatedAt
+  createdBy       String?                @db.Uuid
+  createdAt       DateTime               @default(now())
+  updatedAt       DateTime?              @updatedAt
   deletedAt       DateTime?
-  deletedBy       String?               @db.Uuid
+  deletedBy       String?                @db.Uuid
 
-  job             crm_Opportunities     @relation(fields: [job_id], references: [id])
-  assigned_user   Users?                @relation("appointment_assigned_to", fields: [assigned_to], references: [id])
-  created_by_user Users?                @relation("appointment_created_by", fields: [createdBy], references: [id])
+  job             crm_Opportunities      @relation(fields: [job_id], references: [id])
+  assigned_user   Users                  @relation("appointment_assigned_to", fields: [assigned_to], references: [id])
+  created_by_user Users?                 @relation("appointment_created_by", fields: [createdBy], references: [id])
   tasks           crm_Job_Tasks[]
 
   @@index([job_id])
   @@index([assigned_to])
   @@index([start_date])
   @@index([status])
+  @@index([type])
   @@index([job_id, start_date])
   @@index([deletedAt])
+}
+
+enum crm_Appointment_Type {
+  INSPECTION
+  ADJUSTER
+  SALES_VISIT
+  PRE_CONSTRUCTION
+  BUILD
+  DELIVERY
+  FINAL_WALKTHROUGH
+  WARRANTY
+  OTHER
 }
 
 enum crm_Appointment_Status {
