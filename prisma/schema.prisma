@@ -724,6 +724,17 @@ model crm_Conversations {
   contactId       String?   @db.Uuid
   leadId          String?   @db.Uuid
 
+  // Twilio call fields (populated for phone channel)
+  twilioCallSid       String?   @unique
+  twilioCallStatus    String?   // ringing, in-progress, completed, no-answer, busy, failed
+  twilioRecordingUrl  String?
+  callDirection       String?   // inbound, outbound
+  callDuration        Int?      // seconds
+
+  // Tracking number that was called (for inbound)
+  trackingNumberId    String?   @db.Uuid
+  trackingNumber      crm_Tracking_Numbers? @relation("conversation_tracking", fields: [trackingNumberId], references: [id])
+
   lastActivityAt  DateTime  @default(now())
   createdBy       String?   @db.Uuid
   updatedBy       String?   @db.Uuid
@@ -736,6 +747,7 @@ model crm_Conversations {
   lead            crm_Leads?     @relation("conversation_lead", fields: [leadId], references: [id])
   created_by_user Users?         @relation("conversation_created_by", fields: [createdBy], references: [id])
   updated_by_user Users?         @relation("conversation_updated_by", fields: [updatedBy], references: [id])
+  messages        crm_Messages[] @relation("conversation_messages")
 
   @@index([phoneNumber])
   @@index([contactId])
@@ -744,6 +756,47 @@ model crm_Conversations {
   @@index([status])
   @@index([deletedAt])
   @@index([channel, status])
+  @@index([twilioCallSid])
+  @@index([trackingNumberId])
+}
+
+// Individual SMS/chat messages within a conversation
+model crm_Messages {
+  id              String    @id @default(uuid()) @db.Uuid
+  conversationId  String    @db.Uuid
+  direction       String    // inbound, outbound
+  body            String
+  mediaUrls       String[]  // MMS attachments
+
+  // Twilio SMS fields
+  twilioMessageSid  String?   @unique
+  twilioStatus      String?   // queued, sent, delivered, failed, received
+
+  sentBy          String?   @db.Uuid  // user who sent (null for inbound)
+  createdAt       DateTime  @default(now())
+
+  conversation    crm_Conversations @relation("conversation_messages", fields: [conversationId], references: [id], onDelete: Cascade)
+  sent_by_user    Users?            @relation("message_sent_by", fields: [sentBy], references: [id])
+
+  @@index([conversationId, createdAt])
+  @@index([twilioMessageSid])
+}
+
+// Maps Twilio phone numbers to marketing sources
+model crm_Tracking_Numbers {
+  id            String    @id @default(uuid()) @db.Uuid
+  phoneNumber   String    @unique   // E.164 format: +17195558000
+  friendlyName  String              // "Google Ads — Roof Repair"
+  source        String              // marketing channel
+  campaign      String?             // specific campaign
+  isActive      Boolean   @default(true)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime? @updatedAt
+
+  conversations crm_Conversations[] @relation("conversation_tracking")
+
+  @@index([phoneNumber])
+  @@index([isActive])
 }
 
 model Boards {
@@ -1133,6 +1186,7 @@ model Users {
   uploaded_job_docs              crm_Job_Documents[]   @relation("job_doc_uploaded_by")
   conversations_created          crm_Conversations[]   @relation("conversation_created_by")
   conversations_updated          crm_Conversations[]   @relation("conversation_updated_by")
+  messages_sent                  crm_Messages[]        @relation("message_sent_by")
 
   @@index([email])
   @@index([userStatus])

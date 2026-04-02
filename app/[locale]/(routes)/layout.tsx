@@ -12,6 +12,8 @@ import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar";
 import { AppSidebar } from "./components/app-sidebar";
 import { getTranslations } from "next-intl/server";
 import { AvatarProvider } from "@/context/avatar-context";
+import { TwilioProvider } from "@/context/twilio-context";
+import { IncomingCallBanner } from "@/components/crm/conversations/IncomingCallBanner";
 import { getOpenConversationCount } from "@/actions/crm/conversations/get-conversations";
 
 export const metadata: Metadata = {
@@ -99,6 +101,7 @@ export default async function AppLayout({
   //console.log(typeof build, "build");
   return (
     <AvatarProvider initialAvatar={user?.image}>
+    <TwilioProvider>
     <SidebarProvider defaultOpen={sidebarOpen}>
       <AppSidebar
         dict={translations}
@@ -122,6 +125,8 @@ export default async function AppLayout({
         </div>
       </SidebarInset>
     </SidebarProvider>
+    <IncomingCallBanner />
+    </TwilioProvider>
     </AvatarProvider>
   );
 }
