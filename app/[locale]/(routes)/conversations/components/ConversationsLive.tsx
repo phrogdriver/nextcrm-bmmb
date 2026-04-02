@@ -67,15 +67,12 @@ function getInitials(name: string): string {
   return name.split(" ").map(n => n[0]).join("").slice(0, 2).toUpperCase();
 }
 
-const CHANNEL_ICONS = { phone: Phone, sms: MessageSquare, chat: MessageCircle };
-
 function ThreadItem({
   item, selected, onClick,
 }: {
   item: ConversationListItem; selected: boolean; onClick: () => void;
 }) {
   const name = getDisplayName(item);
-  const Icon = CHANNEL_ICONS[item.channel];
   return (
     <button
       onClick={onClick}
@@ -95,7 +92,6 @@ function ThreadItem({
           </span>
         </div>
         <div className="flex items-center gap-2 mt-0.5">
-          <Icon className="h-3 w-3 text-muted-foreground" />
           <span className="text-sm text-muted-foreground truncate">{item.phoneNumber}</span>
           <Badge variant={item.status === "open" ? "default" : "secondary"} className="text-[10px] h-4">
             {item.status}
@@ -342,7 +338,6 @@ function NewConversationSheet({
   open: boolean; onOpenChange: (v: boolean) => void;
   onCreated: (id: string) => void;
 }) {
-  const [channel, setChannel] = useState<"phone" | "sms" | "chat">("phone");
   const [phoneNumber, setPhoneNumber] = useState("");
   const [matches, setMatches] = useState<CustomerMatch[]>([]);
   const [selectedMatch, setSelectedMatch] = useState<CustomerMatch | null>(null);
@@ -358,7 +353,6 @@ function NewConversationSheet({
   const handleSubmit = async () => {
     setSubmitting(true);
     const result = await createConversation({
-      channel,
       phoneNumber: phoneNumber || undefined,
       contactId: selectedMatch?.type === "contact" ? selectedMatch.id : undefined,
       leadId: selectedMatch?.type === "lead" ? selectedMatch.id : undefined,
@@ -367,7 +361,7 @@ function NewConversationSheet({
     if (result.error) { toast.error(result.error); return; }
     if (result.data) {
       toast.success("Conversation created");
-      setChannel("phone"); setPhoneNumber(""); setMatches([]); setSelectedMatch(null);
+      setPhoneNumber(""); setMatches([]); setSelectedMatch(null);
       onOpenChange(false);
       onCreated(result.data.id);
     }
@@ -378,20 +372,9 @@ function NewConversationSheet({
       <SheetContent className="overflow-y-auto">
         <SheetHeader>
           <SheetTitle>New Conversation</SheetTitle>
-          <SheetDescription>Start a new phone, SMS, or chat conversation</SheetDescription>
+          <SheetDescription>Start a new conversation with a phone number</SheetDescription>
         </SheetHeader>
         <div className="space-y-4 mt-4">
-          <div className="space-y-2">
-            <Label>Channel</Label>
-            <Select value={channel} onValueChange={(v) => setChannel(v as any)}>
-              <SelectTrigger><SelectValue /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="phone">Phone</SelectItem>
-                <SelectItem value="sms">SMS</SelectItem>
-                <SelectItem value="chat">Chat</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
           <div className="space-y-2">
             <Label>Phone number</Label>
             <Input

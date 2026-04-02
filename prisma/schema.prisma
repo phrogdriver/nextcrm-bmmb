@@ -703,12 +703,6 @@ model crm_ActivityLinks {
 
 // ── Conversations ──────────────────────────────────────────
 
-enum crm_Conversation_Channel {
-  phone
-  sms
-  chat
-}
-
 enum crm_Conversation_Status {
   open
   closed
@@ -716,7 +710,6 @@ enum crm_Conversation_Status {
 
 model crm_Conversations {
   id              String                    @id @default(uuid()) @db.Uuid
-  channel         crm_Conversation_Channel
   phoneNumber     String?
   subject         String?
   status          crm_Conversation_Status   @default(open)
@@ -755,7 +748,6 @@ model crm_Conversations {
   @@index([lastActivityAt])
   @@index([status])
   @@index([deletedAt])
-  @@index([channel, status])
   @@index([twilioCallSid])
   @@index([trackingNumberId])
 }

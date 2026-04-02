@@ -6,7 +6,6 @@ import { getActivitiesByEntity, type ActivityCursor, type ActivityWithLinks } fr
 
 export type ConversationDetail = {
   id: string;
-  channel: "phone" | "sms" | "chat";
   phoneNumber: string | null;
   subject: string | null;
   status: "open" | "closed";

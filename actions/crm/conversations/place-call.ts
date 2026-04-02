@@ -55,7 +55,6 @@ export const placeCall = async (data: {
 
       conversation = await (prismadb as any).crm_Conversations.create({
         data: {
-          channel: "phone",
           phoneNumber: phone,
           status: "open",
           callDirection: "outbound",

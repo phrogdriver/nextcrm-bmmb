@@ -7,7 +7,6 @@ import { writeAuditLog } from "@/lib/audit-log";
 import { normalizePhone } from "@/lib/twilio/normalize-phone";
 
 export const createConversation = async (data: {
-  channel: "phone" | "sms" | "chat";
   phoneNumber?: string;
   subject?: string;
   contactId?: string;
@@ -21,7 +20,6 @@ export const createConversation = async (data: {
 
     const conversation = await (prismadb as any).crm_Conversations.create({
       data: {
-        channel: data.channel,
         phoneNumber: phone,
         subject: data.subject || undefined,
         contactId: data.contactId || undefined,

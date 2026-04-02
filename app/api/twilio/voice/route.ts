@@ -108,7 +108,6 @@ async function handleInbound(
 
     conversation = await (prismadb as any).crm_Conversations.create({
       data: {
-        channel: "phone",
         phoneNumber: from,
         status: "open",
         twilioCallSid: callSid,

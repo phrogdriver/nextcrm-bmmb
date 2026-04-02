@@ -7,7 +7,6 @@ const PAGE_SIZE = 25;
 
 export type ConversationListItem = {
   id: string;
-  channel: "phone" | "sms" | "chat";
   phoneNumber: string | null;
   subject: string | null;
   status: "open" | "closed";

@@ -63,7 +63,6 @@ export async function POST(request: Request) {
 
     conversation = await (prismadb as any).crm_Conversations.create({
       data: {
-        channel: "sms",
         phoneNumber: from,
         status: "open",
         trackingNumberId: trackingNumber?.id ?? undefined,
