@@ -15,12 +15,16 @@ export async function POST(request: Request) {
   }
 
   const callSid = body.CallSid;
+  const direction = body.Direction; // inbound, outbound-dial, outbound-api
 
-  // If "To" is a phone number, this is an outbound call from the browser
-  const toNumber = body.To;
-  const isOutbound = toNumber && /^\+?\d{10,15}$/.test(toNumber.replace(/\D/g, ""));
+  // Browser-originated calls come via the TwiML App with Direction = undefined
+  // or "outbound-api". Inbound calls from PSTN have Direction = "inbound".
+  // The key distinction: inbound calls have From = caller, To = our Twilio number.
+  // Browser outbound calls have From = "client:crm-agent", To = the number to dial.
+  const isFromBrowser = body.From?.startsWith("client:");
 
-  if (isOutbound) {
+  if (isFromBrowser) {
+    const toNumber = body.To;
     return handleOutbound(toNumber, callSid);
   }
 
