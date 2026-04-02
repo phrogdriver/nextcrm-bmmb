@@ -6,7 +6,8 @@ export type AuditEntityType =
   | "contact"
   | "lead"
   | "opportunity"
-  | "contract";
+  | "contract"
+  | "conversation";
 
 export type AuditAction =
   | "created"

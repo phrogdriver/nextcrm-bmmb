@@ -11,6 +11,7 @@ import {
   SidebarMenu,
   SidebarMenuItem,
   SidebarMenuButton,
+  SidebarMenuBadge,
   SidebarMenuSub,
   SidebarMenuSubButton,
   SidebarMenuSubItem,
@@ -45,6 +46,7 @@ export interface NavItem {
   url?: string
   icon?: LucideIcon
   isActive?: boolean
+  badge?: number
   items?: NavSubItem[] // For collapsible groups
 }
 
@@ -142,6 +144,11 @@ export function NavMain({ items, dict }: NavMainProps) {
                   <span>{item.title}</span>
                 </Link>
               </SidebarMenuButton>
+              {item.badge != null && item.badge > 0 && (
+                <SidebarMenuBadge className="bg-destructive text-destructive-foreground">
+                  {item.badge}
+                </SidebarMenuBadge>
+              )}
             </SidebarMenuItem>
           )
         })}

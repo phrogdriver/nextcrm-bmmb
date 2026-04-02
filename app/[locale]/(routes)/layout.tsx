@@ -12,6 +12,7 @@ import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar";
 import { AppSidebar } from "./components/app-sidebar";
 import { getTranslations } from "next-intl/server";
 import { AvatarProvider } from "@/context/avatar-context";
+import { getOpenConversationCount } from "@/actions/crm/conversations/get-conversations";
 
 export const metadata: Metadata = {
   metadataBase: new URL(
@@ -86,9 +87,13 @@ export default async function AppLayout({
     reports: dict("reports"),
     documents: dict("documents"),
     settings: dict("settings"),
+    conversations: dict("conversations"),
   };
 
-  const cookieStore = await cookies();
+  const [cookieStore, conversationsBadge] = await Promise.all([
+    cookies(),
+    getOpenConversationCount(),
+  ]);
   const sidebarOpen = cookieStore.get("sidebar_state")?.value !== "false";
 
   //console.log(typeof build, "build");
@@ -98,6 +103,7 @@ export default async function AppLayout({
       <AppSidebar
         dict={translations}
         session={session}
+        conversationsBadge={conversationsBadge}
       />
       <SidebarInset>
         <Header

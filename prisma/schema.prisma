@@ -124,6 +124,8 @@ model crm_Leads {
   @@index([lead_type_id])
   @@index([createdAt])
   @@index([deletedAt])
+  conversations     crm_Conversations[]  @relation("conversation_lead")
+
   @@index([close_reason])
   @@index([converted_at])
 }
@@ -589,6 +591,7 @@ model crm_Contacts {
   adjuster_jobs         crm_Opportunities[]      @relation("job_adjuster")
   adjuster_claims       crm_Insurance_Claims[]   @relation("claim_adjuster")
   owned_properties      crm_Properties[]         @relation("property_owner")
+  conversations         crm_Conversations[]      @relation("conversation_contact")
   deletedAt             DateTime?
   deletedBy             String?   @db.Uuid
 
@@ -696,6 +699,51 @@ model crm_ActivityLinks {
 
   @@index([activityId])
   @@index([entityType, entityId, activityId])
+}
+
+// ── Conversations ──────────────────────────────────────────
+
+enum crm_Conversation_Channel {
+  phone
+  sms
+  chat
+}
+
+enum crm_Conversation_Status {
+  open
+  closed
+}
+
+model crm_Conversations {
+  id              String                    @id @default(uuid()) @db.Uuid
+  channel         crm_Conversation_Channel
+  phoneNumber     String?
+  subject         String?
+  status          crm_Conversation_Status   @default(open)
+
+  contactId       String?   @db.Uuid
+  leadId          String?   @db.Uuid
+
+  lastActivityAt  DateTime  @default(now())
+  createdBy       String?   @db.Uuid
+  updatedBy       String?   @db.Uuid
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime? @updatedAt
+  deletedAt       DateTime?
+  deletedBy       String?   @db.Uuid
+
+  contact         crm_Contacts?  @relation("conversation_contact", fields: [contactId], references: [id])
+  lead            crm_Leads?     @relation("conversation_lead", fields: [leadId], references: [id])
+  created_by_user Users?         @relation("conversation_created_by", fields: [createdBy], references: [id])
+  updated_by_user Users?         @relation("conversation_updated_by", fields: [updatedBy], references: [id])
+
+  @@index([phoneNumber])
+  @@index([contactId])
+  @@index([leadId])
+  @@index([lastActivityAt])
+  @@index([status])
+  @@index([deletedAt])
+  @@index([channel, status])
 }
 
 model Boards {
@@ -1083,6 +1131,8 @@ model Users {
   created_invoices_crm           crm_Invoices[]        @relation("invoice_created_by")
   uploaded_photos                crm_Property_Photos[] @relation("photo_uploaded_by")
   uploaded_job_docs              crm_Job_Documents[]   @relation("job_doc_uploaded_by")
+  conversations_created          crm_Conversations[]   @relation("conversation_created_by")
+  conversations_updated          crm_Conversations[]   @relation("conversation_updated_by")
 
   @@index([email])
   @@index([userStatus])

@@ -21,6 +21,7 @@ import getReportsMenuItem from "./menu-items/Reports";
 import getDocumentsMenuItem from "./menu-items/Documents";
 import getAdministrationMenuItem from "./menu-items/Administration";
 import getCampaignsMenuItem from "./menu-items/Campaigns";
+import getConversationsMenuItem from "./menu-items/Conversations";
 
 /**
  * AppSidebar Component - Task Groups 1.2, 2.2-2.7, 3.1, 5.3, 5.4
@@ -79,11 +80,13 @@ interface Session {
 interface AppSidebarProps extends React.ComponentProps<typeof Sidebar> {
   dict: any;
   session: Session;
+  conversationsBadge?: number;
 }
 
 export function AppSidebar({
   dict,
   session,
+  conversationsBadge,
   ...props
 }: AppSidebarProps) {
   const { state } = useSidebar();
@@ -92,6 +95,7 @@ export function AppSidebar({
   const navItems = [
     getDashboardMenuItem({ title: dict?.dashboard || "Dashboard" }),
     getCrmMenuItem({ localizations: dict.crm }),
+    getConversationsMenuItem({ title: dict?.conversations || "Conversations", badge: conversationsBadge }),
     getCampaignsMenuItem({
       localizations: {
         title: "Campaigns",
