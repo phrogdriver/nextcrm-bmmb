@@ -1,0 +1,698 @@
+"use client";
+
+import { useState, useEffect, useCallback } from "react";
+import { useRouter } from "next/navigation";
+import {
+  Phone, PhoneOff, MessageSquare, MessageCircle, Plus, Search,
+  PhoneIncoming, PhoneOutgoing, User, Briefcase, MapPin,
+  Clock, CalendarDays, ArrowUpRight, Megaphone, Mic, MicOff,
+} from "lucide-react";
+import { formatDistanceToNow, format } from "date-fns";
+
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Separator } from "@/components/ui/separator";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import {
+  Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle,
+} from "@/components/ui/sheet";
+import {
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+} from "@/components/ui/select";
+import {
+  ResizableHandle, ResizablePanel, ResizablePanelGroup,
+} from "@/components/ui/resizable";
+import { cn } from "@/lib/utils";
+import { toast } from "sonner";
+
+import { useTwilio } from "@/context/twilio-context";
+import {
+  getConversations,
+  type ConversationListItem,
+} from "@/actions/crm/conversations/get-conversations";
+import { getConversationById, type ConversationDetail as ConvDetail } from "@/actions/crm/conversations/get-conversation-by-id";
+import { getMessages, type MessageItem } from "@/actions/crm/conversations/get-messages";
+import { createConversation } from "@/actions/crm/conversations/create-conversation";
+import { updateConversation } from "@/actions/crm/conversations/update-conversation";
+import { sendSms } from "@/actions/crm/conversations/send-sms";
+import { placeCall } from "@/actions/crm/conversations/place-call";
+import { searchCustomerByPhone, type CustomerMatch } from "@/actions/crm/conversations/search-customer-by-phone";
+import { createLead } from "@/actions/crm/leads/create-lead";
+
+// ── Types ────────────────────────────────────────────────
+
+interface Props {
+  initialConversations: ConversationListItem[];
+}
+
+// ── Thread List Item ─────────────────────────────────────
+
+function getDisplayName(item: ConversationListItem): string {
+  if (item.contact) {
+    return [item.contact.first_name, item.contact.last_name].filter(Boolean).join(" ");
+  }
+  if (item.lead) {
+    return [item.lead.firstName, item.lead.lastName].filter(Boolean).join(" ");
+  }
+  return item.phoneNumber || "Unknown";
+}
+
+function getInitials(name: string): string {
+  if (name.startsWith("(") || name.startsWith("+")) return "?";
+  return name.split(" ").map(n => n[0]).join("").slice(0, 2).toUpperCase();
+}
+
+const CHANNEL_ICONS = { phone: Phone, sms: MessageSquare, chat: MessageCircle };
+
+function ThreadItem({
+  item, selected, onClick,
+}: {
+  item: ConversationListItem; selected: boolean; onClick: () => void;
+}) {
+  const name = getDisplayName(item);
+  const Icon = CHANNEL_ICONS[item.channel];
+  return (
+    <button
+      onClick={onClick}
+      className={cn(
+        "w-full flex items-start gap-3 p-4 text-left hover:bg-accent transition-colors border-b",
+        selected && "bg-accent",
+      )}
+    >
+      <Avatar className="h-10 w-10 mt-0.5 flex-shrink-0">
+        <AvatarFallback>{getInitials(name)}</AvatarFallback>
+      </Avatar>
+      <div className="flex-1 min-w-0">
+        <div className="flex items-center justify-between gap-2">
+          <span className="font-medium truncate">{name}</span>
+          <span className="text-xs text-muted-foreground whitespace-nowrap">
+            {formatDistanceToNow(new Date(item.lastActivityAt), { addSuffix: true })}
+          </span>
+        </div>
+        <div className="flex items-center gap-2 mt-0.5">
+          <Icon className="h-3 w-3 text-muted-foreground" />
+          <span className="text-sm text-muted-foreground truncate">{item.phoneNumber}</span>
+          <Badge variant={item.status === "open" ? "default" : "secondary"} className="text-[10px] h-4">
+            {item.status}
+          </Badge>
+        </div>
+      </div>
+    </button>
+  );
+}
+
+// ── Message Bubble ───────────────────────────────────────
+
+function MessageBubble({ msg }: { msg: MessageItem }) {
+  const isOutbound = msg.direction === "outbound";
+  return (
+    <div className={cn("flex gap-2 max-w-[80%] mb-3", isOutbound ? "ml-auto flex-row-reverse" : "mr-auto")}>
+      <div>
+        <div
+          className={cn(
+            "rounded-2xl px-4 py-2.5 text-sm",
+            isOutbound
+              ? "bg-primary text-primary-foreground rounded-br-md"
+              : "bg-muted rounded-bl-md",
+          )}
+        >
+          {msg.body}
+        </div>
+        <div className={cn("text-xs text-muted-foreground mt-1", isOutbound && "text-right")}>
+          {format(new Date(msg.createdAt), "MMM d, h:mm a")}
+          {msg.twilioStatus && msg.twilioStatus !== "received" && (
+            <span> &middot; {msg.twilioStatus}</span>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── Active Call Bar ──────────────────────────────────────
+
+function ActiveCallBar() {
+  const { callState, hangup, mute, isMuted } = useTwilio();
+  const [elapsed, setElapsed] = useState(0);
+
+  useEffect(() => {
+    if (callState.status !== "in-progress") { setElapsed(0); return; }
+    const interval = setInterval(() => setElapsed(s => s + 1), 1000);
+    return () => clearInterval(interval);
+  }, [callState.status]);
+
+  if (callState.status !== "in-progress" && callState.status !== "ringing" && callState.status !== "connecting") {
+    return null;
+  }
+
+  const mins = Math.floor(elapsed / 60);
+  const secs = elapsed % 60;
+
+  return (
+    <div className="flex-shrink-0 px-4 py-2 bg-green-600 text-white flex items-center justify-between">
+      <div className="flex items-center gap-2">
+        <Phone className="h-4 w-4 animate-pulse" />
+        <span className="text-sm font-medium">
+          {callState.status === "in-progress"
+            ? `${mins}:${secs.toString().padStart(2, "0")}`
+            : callState.status === "connecting" ? "Connecting..." : "Ringing..."}
+        </span>
+        <span className="text-sm opacity-80">{callState.phoneNumber}</span>
+      </div>
+      <div className="flex items-center gap-2">
+        <Button
+          size="sm"
+          variant="ghost"
+          className="text-white hover:bg-green-700 h-7"
+          onClick={() => mute(!isMuted)}
+        >
+          {isMuted ? <MicOff className="h-4 w-4" /> : <Mic className="h-4 w-4" />}
+        </Button>
+        <Button
+          size="sm"
+          variant="ghost"
+          className="text-white hover:bg-red-600 h-7"
+          onClick={hangup}
+        >
+          <PhoneOff className="h-4 w-4" />
+        </Button>
+      </div>
+    </div>
+  );
+}
+
+// ── Customer Context Panel ───────────────────────────────
+
+function CustomerPanel({
+  conversation,
+  onLinked,
+}: {
+  conversation: ConvDetail;
+  onLinked: () => void;
+}) {
+  const [bookLeadOpen, setBookLeadOpen] = useState(false);
+  const isLinked = !!conversation.contactId || !!conversation.leadId;
+
+  const name = conversation.contact
+    ? [conversation.contact.first_name, conversation.contact.last_name].filter(Boolean).join(" ")
+    : conversation.lead
+    ? [conversation.lead.firstName, conversation.lead.lastName].filter(Boolean).join(" ")
+    : null;
+
+  if (!isLinked) {
+    return (
+      <div className="p-4 space-y-4">
+        <div className="text-center space-y-3 py-4">
+          <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-muted">
+            <User className="h-6 w-6 text-muted-foreground" />
+          </div>
+          <div>
+            <p className="font-medium">Unknown Caller</p>
+            <p className="text-sm text-muted-foreground">{conversation.phoneNumber}</p>
+          </div>
+        </div>
+        <Button className="w-full" onClick={() => setBookLeadOpen(true)}>
+          <Plus className="h-4 w-4 mr-2" />
+          Book Lead
+        </Button>
+        <BookLeadSheet
+          open={bookLeadOpen}
+          onOpenChange={setBookLeadOpen}
+          phone={conversation.phoneNumber}
+          conversationId={conversation.id}
+          onCreated={onLinked}
+        />
+      </div>
+    );
+  }
+
+  return (
+    <div className="p-4 space-y-4">
+      <Card>
+        <CardHeader className="pb-3">
+          <div className="flex items-center justify-between">
+            <CardTitle className="text-sm font-medium">Customer</CardTitle>
+            <Badge variant="outline" className="text-xs">
+              {conversation.contactId ? "Contact" : "Lead"}
+            </Badge>
+          </div>
+        </CardHeader>
+        <CardContent className="space-y-2 text-sm">
+          <div className="flex items-center gap-2">
+            <User className="h-3.5 w-3.5 text-muted-foreground" />
+            <span className="font-medium">{name}</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <Phone className="h-3.5 w-3.5 text-muted-foreground" />
+            <span>{conversation.phoneNumber}</span>
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
+// ── Book Lead Sheet ──────────────────────────────────────
+
+function BookLeadSheet({
+  open, onOpenChange, phone, conversationId, onCreated,
+}: {
+  open: boolean; onOpenChange: (v: boolean) => void;
+  phone: string | null; conversationId: string; onCreated: () => void;
+}) {
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
+  const [request, setRequest] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+
+  const handleSubmit = async () => {
+    if (!lastName.trim()) { toast.error("Last name is required"); return; }
+    setSubmitting(true);
+    const result = await createLead({
+      first_name: firstName || undefined,
+      last_name: lastName,
+      phone: phone || undefined,
+      request: request || undefined,
+    });
+    if (result.error) {
+      toast.error(result.error);
+      setSubmitting(false);
+      return;
+    }
+    if (result.data) {
+      await updateConversation({ id: conversationId, leadId: result.data.id });
+      toast.success("Lead created and linked");
+      setFirstName(""); setLastName(""); setRequest("");
+      setSubmitting(false);
+      onOpenChange(false);
+      onCreated();
+    }
+  };
+
+  return (
+    <Sheet open={open} onOpenChange={onOpenChange}>
+      <SheetContent className="overflow-y-auto">
+        <SheetHeader>
+          <SheetTitle>Book Lead</SheetTitle>
+          <SheetDescription>Create a new lead from this conversation</SheetDescription>
+        </SheetHeader>
+        <div className="space-y-4 mt-4">
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label>First name</Label>
+              <Input value={firstName} onChange={(e) => setFirstName(e.target.value)} />
+            </div>
+            <div className="space-y-2">
+              <Label>Last name</Label>
+              <Input value={lastName} onChange={(e) => setLastName(e.target.value)} />
+            </div>
+          </div>
+          <div className="space-y-2">
+            <Label>Phone</Label>
+            <Input defaultValue={phone ?? ""} disabled />
+          </div>
+          <div className="space-y-2">
+            <Label>What do they need?</Label>
+            <Textarea
+              placeholder="Roof leak, storm damage, gutters, etc."
+              value={request}
+              onChange={(e) => setRequest(e.target.value)}
+              rows={3}
+            />
+          </div>
+          <Button onClick={handleSubmit} disabled={submitting} className="w-full">
+            {submitting ? "Creating…" : "Create Lead"}
+          </Button>
+        </div>
+      </SheetContent>
+    </Sheet>
+  );
+}
+
+// ── New Conversation Sheet ───────────────────────────────
+
+function NewConversationSheet({
+  open, onOpenChange, onCreated,
+}: {
+  open: boolean; onOpenChange: (v: boolean) => void;
+  onCreated: (id: string) => void;
+}) {
+  const [channel, setChannel] = useState<"phone" | "sms" | "chat">("phone");
+  const [phoneNumber, setPhoneNumber] = useState("");
+  const [matches, setMatches] = useState<CustomerMatch[]>([]);
+  const [selectedMatch, setSelectedMatch] = useState<CustomerMatch | null>(null);
+  const [submitting, setSubmitting] = useState(false);
+
+  const handlePhoneBlur = async () => {
+    if (phoneNumber.length >= 3) {
+      const { data } = await searchCustomerByPhone(phoneNumber);
+      setMatches(data);
+    }
+  };
+
+  const handleSubmit = async () => {
+    setSubmitting(true);
+    const result = await createConversation({
+      channel,
+      phoneNumber: phoneNumber || undefined,
+      contactId: selectedMatch?.type === "contact" ? selectedMatch.id : undefined,
+      leadId: selectedMatch?.type === "lead" ? selectedMatch.id : undefined,
+    });
+    setSubmitting(false);
+    if (result.error) { toast.error(result.error); return; }
+    if (result.data) {
+      toast.success("Conversation created");
+      setChannel("phone"); setPhoneNumber(""); setMatches([]); setSelectedMatch(null);
+      onOpenChange(false);
+      onCreated(result.data.id);
+    }
+  };
+
+  return (
+    <Sheet open={open} onOpenChange={onOpenChange}>
+      <SheetContent className="overflow-y-auto">
+        <SheetHeader>
+          <SheetTitle>New Conversation</SheetTitle>
+          <SheetDescription>Start a new phone, SMS, or chat conversation</SheetDescription>
+        </SheetHeader>
+        <div className="space-y-4 mt-4">
+          <div className="space-y-2">
+            <Label>Channel</Label>
+            <Select value={channel} onValueChange={(v) => setChannel(v as any)}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="phone">Phone</SelectItem>
+                <SelectItem value="sms">SMS</SelectItem>
+                <SelectItem value="chat">Chat</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-2">
+            <Label>Phone number</Label>
+            <Input
+              placeholder="+17195551234"
+              value={phoneNumber}
+              onChange={(e) => setPhoneNumber(e.target.value)}
+              onBlur={handlePhoneBlur}
+            />
+          </div>
+          {matches.length > 0 && (
+            <div className="space-y-2">
+              <Label>Matching customers</Label>
+              <div className="border rounded-md divide-y max-h-48 overflow-y-auto">
+                {matches.map((m) => (
+                  <button
+                    key={`${m.type}-${m.id}`}
+                    onClick={() => setSelectedMatch(m)}
+                    className={cn(
+                      "w-full p-2 text-left text-sm hover:bg-accent",
+                      selectedMatch?.id === m.id && "bg-accent",
+                    )}
+                  >
+                    <div className="font-medium">{[m.firstName, m.lastName].filter(Boolean).join(" ")}</div>
+                    <div className="text-xs text-muted-foreground">
+                      {m.type === "contact" ? "Contact" : "Lead"} &middot; {m.phone}
+                    </div>
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+          <Button onClick={handleSubmit} disabled={submitting} className="w-full">
+            {submitting ? "Creating…" : "Create Conversation"}
+          </Button>
+        </div>
+      </SheetContent>
+    </Sheet>
+  );
+}
+
+// ── Main Component ───────────────────────────────────────
+
+export function ConversationsLive({ initialConversations }: Props) {
+  const { dial, callState } = useTwilio();
+
+  const [conversations, setConversations] = useState(initialConversations);
+  const [selectedId, setSelectedId] = useState<string | null>(initialConversations[0]?.id ?? null);
+  const [filter, setFilter] = useState<"all" | "open" | "closed">("open");
+  const [search, setSearch] = useState("");
+  const [newSheetOpen, setNewSheetOpen] = useState(false);
+
+  // Detail state
+  const [detail, setDetail] = useState<ConvDetail | null>(null);
+  const [messages, setMessages] = useState<MessageItem[]>([]);
+  const [detailLoading, setDetailLoading] = useState(false);
+
+  // Compose
+  const [composeText, setComposeText] = useState("");
+  const [sending, setSending] = useState(false);
+
+  const filteredConversations = conversations.filter(
+    (c) => filter === "all" || c.status === filter
+  );
+
+  // Refresh conversation list
+  const refreshList = useCallback(async () => {
+    const { data } = await getConversations(undefined, search || undefined);
+    setConversations(data);
+  }, [search]);
+
+  // Load conversation detail
+  const loadDetail = useCallback(async (id: string) => {
+    setDetailLoading(true);
+    const [convResult, msgResult] = await Promise.all([
+      getConversationById(id),
+      getMessages(id),
+    ]);
+    setDetail(convResult.conversation);
+    setMessages(msgResult.data);
+    setDetailLoading(false);
+  }, []);
+
+  useEffect(() => {
+    if (selectedId) loadDetail(selectedId);
+  }, [selectedId, loadDetail]);
+
+  // Search
+  const handleSearch = useCallback(async () => {
+    const { data } = await getConversations(undefined, search || undefined);
+    setConversations(data);
+  }, [search]);
+
+  // Send SMS
+  const handleSend = async () => {
+    if (!composeText.trim() || !selectedId) return;
+    setSending(true);
+    const result = await sendSms({ conversationId: selectedId, body: composeText });
+    setSending(false);
+    if (result.error) { toast.error(result.error); return; }
+    setComposeText("");
+    loadDetail(selectedId);
+    refreshList();
+  };
+
+  // Place outbound call
+  const handleDial = async () => {
+    if (!detail?.phoneNumber) return;
+    const result = await placeCall({
+      phoneNumber: detail.phoneNumber,
+      conversationId: selectedId ?? undefined,
+    });
+    if (result.error) { toast.error(result.error); return; }
+    dial(detail.phoneNumber);
+  };
+
+  // Close/reopen conversation
+  const handleToggleStatus = async () => {
+    if (!selectedId || !detail) return;
+    const newStatus = detail.status === "open" ? "closed" : "open";
+    const result = await updateConversation({ id: selectedId, status: newStatus as any });
+    if (result.error) { toast.error(result.error); return; }
+    loadDetail(selectedId);
+    refreshList();
+  };
+
+  const handleNewCreated = (id: string) => {
+    refreshList();
+    setSelectedId(id);
+  };
+
+  const handleLinked = () => {
+    if (selectedId) loadDetail(selectedId);
+    refreshList();
+  };
+
+  // Detail display name
+  const detailName = detail
+    ? (detail.contact
+      ? [detail.contact.first_name, detail.contact.last_name].filter(Boolean).join(" ")
+      : detail.lead
+      ? [detail.lead.firstName, detail.lead.lastName].filter(Boolean).join(" ")
+      : detail.phoneNumber || "Unknown")
+    : "";
+
+  return (
+    <ResizablePanelGroup orientation="horizontal" className="h-full flex-row border-t">
+      {/* Thread list */}
+      <ResizablePanel defaultSize="35%" minSize="20%" maxSize="45%">
+        <div className="flex flex-col h-full overflow-hidden">
+          <div className="flex-shrink-0 p-4 space-y-3 border-b">
+            <div className="flex items-center justify-between">
+              <h2 className="text-base font-semibold">Conversations</h2>
+              <Button size="sm" onClick={() => setNewSheetOpen(true)}>
+                <Plus className="h-4 w-4 mr-1" />
+                New
+              </Button>
+            </div>
+            <div className="relative">
+              <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Search…"
+                className="pl-8"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && handleSearch()}
+                onBlur={handleSearch}
+              />
+            </div>
+            <div className="flex gap-1">
+              {(["open", "closed", "all"] as const).map((f) => (
+                <Button
+                  key={f}
+                  size="sm"
+                  variant={filter === f ? "default" : "outline"}
+                  onClick={() => setFilter(f)}
+                  className="flex-1 capitalize text-xs h-8"
+                >
+                  {f}
+                  {f === "open" && (
+                    <span className="ml-1.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-destructive text-destructive-foreground text-[10px] px-1">
+                      {conversations.filter((c) => c.status === "open").length}
+                    </span>
+                  )}
+                </Button>
+              ))}
+            </div>
+          </div>
+          <ScrollArea className="flex-1">
+            {filteredConversations.map((item) => (
+              <ThreadItem
+                key={item.id}
+                item={item}
+                selected={selectedId === item.id}
+                onClick={() => setSelectedId(item.id)}
+              />
+            ))}
+            {filteredConversations.length === 0 && (
+              <div className="p-8 text-center text-sm text-muted-foreground">
+                No {filter} conversations
+              </div>
+            )}
+          </ScrollArea>
+        </div>
+      </ResizablePanel>
+
+      <ResizableHandle withHandle />
+
+      {/* Message timeline */}
+      <ResizablePanel defaultSize="40%" minSize="30%">
+        <div className="flex flex-col h-full overflow-hidden">
+          {detail ? (
+            <>
+              {/* Header */}
+              <div className="flex-shrink-0 p-4 border-b">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <Avatar className="h-9 w-9">
+                      <AvatarFallback>{getInitials(detailName)}</AvatarFallback>
+                    </Avatar>
+                    <div>
+                      <h3 className="font-semibold">{detailName}</h3>
+                      <p className="text-sm text-muted-foreground">{detail.phoneNumber}</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Badge variant={detail.status === "open" ? "default" : "secondary"}>
+                      {detail.status}
+                    </Badge>
+                    <Button size="sm" variant="outline" title="Call" onClick={handleDial}>
+                      <Phone className="h-4 w-4" />
+                    </Button>
+                    <Button size="sm" variant="outline" onClick={handleToggleStatus}>
+                      {detail.status === "open" ? "Close" : "Reopen"}
+                    </Button>
+                  </div>
+                </div>
+              </div>
+
+              {/* Active call bar */}
+              <ActiveCallBar />
+
+              {/* Messages */}
+              <ScrollArea className="flex-1">
+                <div className="p-4">
+                  {messages.length === 0 && (
+                    <p className="text-sm text-muted-foreground text-center py-8">
+                      No messages yet. Send an SMS to start the conversation.
+                    </p>
+                  )}
+                  {messages.map((msg) => (
+                    <MessageBubble key={msg.id} msg={msg} />
+                  ))}
+                </div>
+              </ScrollArea>
+
+              {/* Compose */}
+              <div className="flex-shrink-0 p-4 border-t">
+                <div className="flex gap-2">
+                  <Input
+                    placeholder="Type a message…"
+                    className="flex-1"
+                    value={composeText}
+                    onChange={(e) => setComposeText(e.target.value)}
+                    onKeyDown={(e) => e.key === "Enter" && !e.shiftKey && handleSend()}
+                    disabled={sending}
+                  />
+                  <Button onClick={handleSend} disabled={sending || !composeText.trim()}>
+                    Send
+                  </Button>
+                </div>
+              </div>
+            </>
+          ) : (
+            <div className="flex items-center justify-center h-full text-muted-foreground">
+              {detailLoading ? "Loading…" : "Select a conversation"}
+            </div>
+          )}
+        </div>
+      </ResizablePanel>
+
+      <ResizableHandle withHandle />
+
+      {/* Customer panel */}
+      <ResizablePanel defaultSize="25%" minSize="20%" maxSize="35%">
+        <div className="flex flex-col h-full overflow-hidden">
+          <div className="flex-shrink-0 p-4 border-b">
+            <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Customer</h3>
+          </div>
+          <ScrollArea className="flex-1">
+            {detail ? (
+              <CustomerPanel conversation={detail} onLinked={handleLinked} />
+            ) : (
+              <div className="p-8 text-center text-sm text-muted-foreground">
+                Select a conversation
+              </div>
+            )}
+          </ScrollArea>
+        </div>
+      </ResizablePanel>
+
+      <NewConversationSheet open={newSheetOpen} onOpenChange={setNewSheetOpen} onCreated={handleNewCreated} />
+    </ResizablePanelGroup>
+  );
+}
