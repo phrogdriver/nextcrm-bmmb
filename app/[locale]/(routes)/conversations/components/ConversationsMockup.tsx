@@ -1,19 +1,35 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
-  Phone, MessageSquare, MessageCircle, Plus, Search,
+  Phone, PhoneOff, MessageSquare, MessageCircle, Plus, Search,
   PhoneIncoming, PhoneOutgoing, User, Briefcase, MapPin,
-  Clock, CalendarDays, ArrowUpRight,
+  Clock, CalendarDays, ArrowUpRight, Megaphone,
 } from "lucide-react";
 
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+} from "@/components/ui/sheet";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import {
   ResizableHandle,
   ResizablePanel,
@@ -37,6 +53,8 @@ type MockThread = {
   id: string;
   name: string;
   phone: string;
+  trackingNumber?: string; // the number they dialed
+  source?: string;         // marketing source from tracking number
   lastMessage: string;
   lastTime: string;
   unread: number;
@@ -62,6 +80,8 @@ const MOCK_THREADS: MockThread[] = [
     id: "1",
     name: "Maria Rodriguez",
     phone: "(719) 555-0142",
+    trackingNumber: "(719) 555-8000",
+    source: "Google Ads — Roof Repair",
     lastMessage: "Yes, Thursday at 2pm works for the inspection",
     lastTime: "5 min ago",
     unread: 2,
@@ -91,6 +111,8 @@ const MOCK_THREADS: MockThread[] = [
     id: "2",
     name: "James & Linda Whitfield",
     phone: "(719) 555-0298",
+    trackingNumber: "(719) 555-8001",
+    source: "Nextdoor Ad — Hail Season",
     lastMessage: "Thanks for getting back to us so quickly!",
     lastTime: "1 hour ago",
     unread: 0,
@@ -119,6 +141,8 @@ const MOCK_THREADS: MockThread[] = [
     id: "3",
     name: "(719) 555-0371",
     phone: "(719) 555-0371",
+    trackingNumber: "(719) 555-8002",
+    source: "Yard Sign — Briargate",
     lastMessage: "Missed call",
     lastTime: "3 hours ago",
     unread: 1,
@@ -232,11 +256,143 @@ function MessageBubble({ msg }: { msg: MockMessage }) {
   );
 }
 
+function BookLeadSheet({ open, onOpenChange, thread }: { open: boolean; onOpenChange: (v: boolean) => void; thread: MockThread }) {
+  return (
+    <Sheet open={open} onOpenChange={onOpenChange}>
+      <SheetContent>
+        <SheetHeader>
+          <SheetTitle>Book Lead</SheetTitle>
+          <SheetDescription>Create a new lead from this conversation</SheetDescription>
+        </SheetHeader>
+        <div className="space-y-4 mt-4">
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label>First name</Label>
+              <Input placeholder="First name" />
+            </div>
+            <div className="space-y-2">
+              <Label>Last name</Label>
+              <Input placeholder="Last name" />
+            </div>
+          </div>
+          <div className="space-y-2">
+            <Label>Phone</Label>
+            <Input defaultValue={thread.phone} />
+          </div>
+          <div className="space-y-2">
+            <Label>Property address</Label>
+            <Input placeholder="123 Main St" />
+          </div>
+          <div className="grid grid-cols-3 gap-4">
+            <div className="space-y-2">
+              <Label>City</Label>
+              <Input placeholder="City" />
+            </div>
+            <div className="space-y-2">
+              <Label>State</Label>
+              <Input defaultValue="CO" />
+            </div>
+            <div className="space-y-2">
+              <Label>Zip</Label>
+              <Input placeholder="80903" />
+            </div>
+          </div>
+          <div className="space-y-2">
+            <Label>What do they need?</Label>
+            <Textarea placeholder="Roof leak, storm damage, gutters, etc." rows={3} />
+          </div>
+          <Separator />
+          <div className="space-y-2">
+            <Label>Lead source</Label>
+            <Select defaultValue={thread.source ?? ""}>
+              <SelectTrigger>
+                <SelectValue placeholder="Select source…" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="Google Ads — Roof Repair">Google Ads — Roof Repair</SelectItem>
+                <SelectItem value="Nextdoor Ad — Hail Season">Nextdoor Ad — Hail Season</SelectItem>
+                <SelectItem value="Yard Sign — Briargate">Yard Sign — Briargate</SelectItem>
+                <SelectItem value="Yard Sign — Falcon">Yard Sign — Falcon</SelectItem>
+                <SelectItem value="Referral">Referral</SelectItem>
+                <SelectItem value="Website Form">Website Form</SelectItem>
+                <SelectItem value="Door Knock">Door Knock</SelectItem>
+              </SelectContent>
+            </Select>
+            {thread.source && (
+              <p className="text-xs text-muted-foreground flex items-center gap-1">
+                <Megaphone className="h-3 w-3" />
+                Auto-detected from tracking number {thread.trackingNumber}
+              </p>
+            )}
+          </div>
+          <Button className="w-full">Create Lead</Button>
+        </div>
+      </SheetContent>
+    </Sheet>
+  );
+}
+
+function AddContactSheet({ open, onOpenChange, thread }: { open: boolean; onOpenChange: (v: boolean) => void; thread: MockThread }) {
+  return (
+    <Sheet open={open} onOpenChange={onOpenChange}>
+      <SheetContent>
+        <SheetHeader>
+          <SheetTitle>Add Contact</SheetTitle>
+          <SheetDescription>Add as an existing customer or vendor contact</SheetDescription>
+        </SheetHeader>
+        <div className="space-y-4 mt-4">
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label>First name</Label>
+              <Input placeholder="First name" />
+            </div>
+            <div className="space-y-2">
+              <Label>Last name</Label>
+              <Input placeholder="Last name" />
+            </div>
+          </div>
+          <div className="space-y-2">
+            <Label>Phone</Label>
+            <Input defaultValue={thread.phone} />
+          </div>
+          <div className="space-y-2">
+            <Label>Email</Label>
+            <Input placeholder="email@example.com" type="email" />
+          </div>
+          <div className="space-y-2">
+            <Label>Contact type</Label>
+            <Select>
+              <SelectTrigger>
+                <SelectValue placeholder="Select type…" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="homeowner">Homeowner</SelectItem>
+                <SelectItem value="property_manager">Property Manager</SelectItem>
+                <SelectItem value="adjuster">Insurance Adjuster</SelectItem>
+                <SelectItem value="vendor">Vendor / Supplier</SelectItem>
+                <SelectItem value="referral_partner">Referral Partner</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-2">
+            <Label>Notes</Label>
+            <Textarea placeholder="How do you know this person?" rows={3} />
+          </div>
+          <Button className="w-full">Add Contact</Button>
+        </div>
+      </SheetContent>
+    </Sheet>
+  );
+}
+
 function CustomerContext({ thread }: { thread: MockThread }) {
+  const [bookLeadOpen, setBookLeadOpen] = useState(false);
+  const [addContactOpen, setAddContactOpen] = useState(false);
+
   if (!thread.customer) {
     return (
       <div className="p-4 space-y-4">
-        <div className="text-center space-y-3 py-6">
+        <div className="text-center space-y-3 py-4">
           <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-muted">
             <User className="h-6 w-6 text-muted-foreground" />
           </div>
@@ -244,17 +400,35 @@ function CustomerContext({ thread }: { thread: MockThread }) {
             <p className="font-medium">Unknown Caller</p>
             <p className="text-sm text-muted-foreground">{thread.phone}</p>
           </div>
-          <div className="flex flex-col gap-2">
-            <Button className="w-full">
-              <Plus className="h-4 w-4 mr-2" />
-              Book Lead
-            </Button>
-            <Button variant="outline" className="w-full">
-              <User className="h-4 w-4 mr-2" />
-              Add Contact
-            </Button>
-          </div>
         </div>
+
+        {/* Source from tracking number */}
+        {thread.source && (
+          <Card>
+            <CardContent className="pt-4 space-y-1">
+              <div className="flex items-center gap-2 text-sm">
+                <Megaphone className="h-3.5 w-3.5 text-muted-foreground" />
+                <span className="font-medium">{thread.source}</span>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Called {thread.trackingNumber}
+              </p>
+            </CardContent>
+          </Card>
+        )}
+
+        <div className="flex flex-col gap-2">
+          <Button className="w-full" onClick={() => setBookLeadOpen(true)}>
+            <Plus className="h-4 w-4 mr-2" />
+            Book Lead
+          </Button>
+          <Button variant="outline" className="w-full" onClick={() => setAddContactOpen(true)}>
+            <User className="h-4 w-4 mr-2" />
+            Add Contact
+          </Button>
+        </div>
+        <BookLeadSheet open={bookLeadOpen} onOpenChange={setBookLeadOpen} thread={thread} />
+        <AddContactSheet open={addContactOpen} onOpenChange={setAddContactOpen} thread={thread} />
       </div>
     );
   }
@@ -330,6 +504,21 @@ function CustomerContext({ thread }: { thread: MockThread }) {
         </Card>
       )}
 
+      {/* Source */}
+      {thread.source && (
+        <Card>
+          <CardContent className="pt-4 space-y-1">
+            <div className="flex items-center gap-2 text-sm">
+              <Megaphone className="h-3.5 w-3.5 text-muted-foreground" />
+              <span className="font-medium">{thread.source}</span>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Called {thread.trackingNumber}
+            </p>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Quick actions */}
       <div className="space-y-2">
         <Button variant="outline" size="sm" className="w-full justify-start">
@@ -345,13 +534,106 @@ function CustomerContext({ thread }: { thread: MockThread }) {
   );
 }
 
+// ── Incoming Call Notification ────────────────────────────
+
+function IncomingCallNotification({
+  onAccept,
+  onDecline,
+}: {
+  onAccept: () => void;
+  onDecline: () => void;
+}) {
+  const [elapsed, setElapsed] = useState(0);
+
+  useEffect(() => {
+    const interval = setInterval(() => setElapsed((s) => s + 1), 1000);
+    return () => clearInterval(interval);
+  }, []);
+
+  return (
+    <div className="fixed top-6 right-6 z-50 animate-in slide-in-from-top-4 fade-in duration-300">
+      <div className="bg-background border-2 border-green-500 rounded-2xl shadow-2xl p-5 w-80">
+        {/* Ringing indicator */}
+        <div className="flex items-center gap-3 mb-4">
+          <div className="relative">
+            <div className="absolute inset-0 rounded-full bg-green-500/20 animate-ping" />
+            <div className="relative flex h-12 w-12 items-center justify-center rounded-full bg-green-500 text-white">
+              <PhoneIncoming className="h-6 w-6" />
+            </div>
+          </div>
+          <div>
+            <p className="text-xs font-medium text-green-600 uppercase tracking-wider">
+              Incoming Call
+            </p>
+            <p className="font-semibold text-lg leading-tight">(719) 555-0371</p>
+            <p className="text-sm text-muted-foreground">
+              Unknown caller &middot; {elapsed}s
+            </p>
+          </div>
+        </div>
+
+        {/* Source from tracking number */}
+        <div className="bg-muted rounded-lg px-3 py-2 mb-3 text-sm">
+          <div className="flex items-center gap-1.5 text-muted-foreground">
+            <Megaphone className="h-3.5 w-3.5" />
+            <span>Called <span className="font-medium text-foreground">(719) 555-8002</span></span>
+          </div>
+          <p className="text-xs text-muted-foreground mt-0.5">Yard Sign — Briargate</p>
+        </div>
+
+        {/* Customer match hint */}
+        <div className="bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-lg px-3 py-2 mb-4 text-sm">
+          <span className="text-amber-800 dark:text-amber-200">No matching customer — </span>
+          <span className="font-medium text-amber-900 dark:text-amber-100">new caller</span>
+        </div>
+
+        {/* Accept / Decline */}
+        <div className="flex gap-3">
+          <Button
+            onClick={onAccept}
+            className="flex-1 bg-green-600 hover:bg-green-700 text-white"
+          >
+            <Phone className="h-4 w-4 mr-2" />
+            Accept
+          </Button>
+          <Button
+            onClick={onDecline}
+            variant="destructive"
+            className="flex-1"
+          >
+            <PhoneOff className="h-4 w-4 mr-2" />
+            Decline
+          </Button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ── Main Mockup ──────────────────────────────────────────
 
 export function ConversationsMockup() {
   const [selectedId, setSelectedId] = useState("1");
   const selected = MOCK_THREADS.find((t) => t.id === selectedId)!;
+  const [showIncoming, setShowIncoming] = useState(false);
+
+  // Simulate an incoming call after 3 seconds
+  useEffect(() => {
+    const timer = setTimeout(() => setShowIncoming(true), 3000);
+    return () => clearTimeout(timer);
+  }, []);
 
   return (
+    <>
+    {showIncoming && (
+      <IncomingCallNotification
+        onAccept={() => {
+          setShowIncoming(false);
+          setSelectedId("3"); // Switch to the unknown caller thread
+        }}
+        onDecline={() => setShowIncoming(false)}
+      />
+    )}
     <ResizablePanelGroup orientation="horizontal" className="h-full min-h-[700px] flex-row rounded-lg border">
       {/* Thread list */}
       <ResizablePanel defaultSize="25%" minSize="20%" maxSize="35%">
@@ -398,15 +680,26 @@ export function ConversationsMockup() {
                 </Avatar>
                 <div>
                   <h3 className="font-semibold">{selected.name}</h3>
-                  <p className="text-sm text-muted-foreground">{selected.phone}</p>
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <span>{selected.phone}</span>
+                    {selected.source && (
+                      <>
+                        <span>&middot;</span>
+                        <span className="flex items-center gap-1">
+                          <Megaphone className="h-3 w-3" />
+                          {selected.source}
+                        </span>
+                      </>
+                    )}
+                  </div>
                 </div>
               </div>
               <div className="flex items-center gap-2">
-                <Button size="sm" variant="outline">
+                <Badge variant={selected.status === "open" ? "default" : "secondary"}>
+                  {selected.status}
+                </Badge>
+                <Button size="sm" variant="outline" title="Call">
                   <Phone className="h-4 w-4" />
-                </Button>
-                <Button size="sm" variant="outline">
-                  <MessageSquare className="h-4 w-4" />
                 </Button>
               </div>
             </div>
@@ -437,7 +730,7 @@ export function ConversationsMockup() {
       <ResizablePanel defaultSize="25%" minSize="20%" maxSize="35%">
         <div className="flex flex-col h-full">
           <div className="p-4 border-b">
-            <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Context</h3>
+            <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Customer</h3>
           </div>
           <ScrollArea className="flex-1">
             <CustomerContext thread={selected} />
@@ -445,5 +738,6 @@ export function ConversationsMockup() {
         </div>
       </ResizablePanel>
     </ResizablePanelGroup>
+    </>
   );
 }
