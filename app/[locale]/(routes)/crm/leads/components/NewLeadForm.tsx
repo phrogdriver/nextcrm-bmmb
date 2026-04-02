@@ -57,6 +57,11 @@ export function NewLeadForm({ accounts, leadSources, leadStatuses, leadTypes, on
     campaign: z.string().optional(),
     assigned_to: z.string().optional(),
     accountIDs: z.string().optional(),
+    property_address: z.string().optional(),
+    property_city: z.string().optional(),
+    property_state: z.string().optional(),
+    property_zip: z.string().optional(),
+    request: z.string().optional(),
   });
 
   type NewLeadFormValues = z.infer<typeof formSchema>;
@@ -79,6 +84,11 @@ export function NewLeadForm({ accounts, leadSources, leadStatuses, leadTypes, on
       campaign: "",
       assigned_to: "",
       accountIDs: "",
+      property_address: "",
+      property_city: "",
+      property_state: "",
+      property_zip: "",
+      request: "",
     },
   });
 
@@ -204,6 +214,93 @@ export function NewLeadForm({ accounts, leadSources, leadStatuses, leadTypes, on
             </div>
             <FormField
               control={form.control}
+              name="property_address"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>{t("propertyAddress")}</FormLabel>
+                  <FormControl>
+                    <Input
+                      disabled={form.formState.isSubmitting}
+                      placeholder="123 Main St"
+                      {...field}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <FormField
+                control={form.control}
+                name="property_city"
+                render={({ field }) => (
+                  <FormItem className="col-span-2">
+                    <FormLabel>{t("propertyCity")}</FormLabel>
+                    <FormControl>
+                      <Input
+                        disabled={form.formState.isSubmitting}
+                        placeholder="Springfield"
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="property_state"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>{t("propertyState")}</FormLabel>
+                    <FormControl>
+                      <Input
+                        disabled={form.formState.isSubmitting}
+                        placeholder="MO"
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="property_zip"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>{t("propertyZip")}</FormLabel>
+                    <FormControl>
+                      <Input
+                        disabled={form.formState.isSubmitting}
+                        placeholder="65801"
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+            <FormField
+              control={form.control}
+              name="request"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>{t("request")}</FormLabel>
+                  <FormControl>
+                    <Textarea
+                      disabled={form.formState.isSubmitting}
+                      placeholder="Roof leak after last storm, needs inspection"
+                      {...field}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
               name="description"
               render={({ field }) => (
                 <FormItem>
@@ -211,7 +308,7 @@ export function NewLeadForm({ accounts, leadSources, leadStatuses, leadTypes, on
                   <FormControl>
                     <Textarea
                       disabled={form.formState.isSubmitting}
-                      placeholder="New NextCRM functionality"
+                      placeholder="Additional notes"
                       {...field}
                     />
                   </FormControl>

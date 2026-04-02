@@ -22,6 +22,11 @@ export const createLead = async (data: {
   campaign?: string;
   assigned_to?: string;
   accountIDs?: string;
+  property_address?: string;
+  property_city?: string;
+  property_state?: string;
+  property_zip?: string;
+  request?: string;
 }) => {
   const session = await getServerSession(authOptions);
   if (!session) return { error: "Unauthorized" };
@@ -42,6 +47,11 @@ export const createLead = async (data: {
     campaign,
     assigned_to,
     accountIDs,
+    property_address,
+    property_city,
+    property_state,
+    property_zip,
+    request,
   } = data;
 
   try {
@@ -64,6 +74,11 @@ export const createLead = async (data: {
         campaign: campaign || undefined,
         assigned_to: assigned_to || userId,
         accountsIDs: accountIDs || undefined,
+        property_address: property_address || undefined,
+        property_city: property_city || undefined,
+        property_state: property_state || undefined,
+        property_zip: property_zip || undefined,
+        request: request || undefined,
       },
     });
 

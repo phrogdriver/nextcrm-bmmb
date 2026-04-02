@@ -61,6 +61,11 @@ export function UpdateLeadForm({ initialData, setOpen, leadSources, leadStatuses
     campaign: z.string().optional().nullable(),
     assigned_to: z.string().optional().nullable(),
     accountsIDs: z.string().optional().nullable(),
+    property_address: z.string().optional().nullable(),
+    property_city: z.string().optional().nullable(),
+    property_state: z.string().optional().nullable(),
+    property_zip: z.string().optional().nullable(),
+    request: z.string().optional().nullable(),
   });
 
   type NewLeadFormValues = z.infer<typeof formSchema>;
@@ -85,6 +90,11 @@ export function UpdateLeadForm({ initialData, setOpen, leadSources, leadStatuses
       lead_type_id: data.lead_type_id ?? undefined,
       assigned_to: data.assigned_to ?? undefined,
       accountIDs: data.accountsIDs ?? undefined,
+      property_address: data.property_address ?? undefined,
+      property_city: data.property_city ?? undefined,
+      property_state: data.property_state ?? undefined,
+      property_zip: data.property_zip ?? undefined,
+      request: data.request ?? undefined,
     });
     if (result?.error) {
       form.setError("root.serverError", { message: result.error });
@@ -208,6 +218,98 @@ export function UpdateLeadForm({ initialData, setOpen, leadSources, leadStatuses
             </div>
             <FormField
               control={form.control}
+              name="property_address"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>{t("propertyAddress")}</FormLabel>
+                  <FormControl>
+                    <Input
+                      disabled={form.formState.isSubmitting}
+                      placeholder="123 Main St"
+                      {...field}
+                      value={field.value ?? ""}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <FormField
+                control={form.control}
+                name="property_city"
+                render={({ field }) => (
+                  <FormItem className="col-span-2">
+                    <FormLabel>{t("propertyCity")}</FormLabel>
+                    <FormControl>
+                      <Input
+                        disabled={form.formState.isSubmitting}
+                        placeholder="Springfield"
+                        {...field}
+                        value={field.value ?? ""}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="property_state"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>{t("propertyState")}</FormLabel>
+                    <FormControl>
+                      <Input
+                        disabled={form.formState.isSubmitting}
+                        placeholder="MO"
+                        {...field}
+                        value={field.value ?? ""}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="property_zip"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>{t("propertyZip")}</FormLabel>
+                    <FormControl>
+                      <Input
+                        disabled={form.formState.isSubmitting}
+                        placeholder="65801"
+                        {...field}
+                        value={field.value ?? ""}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+            <FormField
+              control={form.control}
+              name="request"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>{t("request")}</FormLabel>
+                  <FormControl>
+                    <Textarea
+                      disabled={form.formState.isSubmitting}
+                      placeholder="Roof leak after last storm, needs inspection"
+                      {...field}
+                      value={field.value ?? ""}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
               name="description"
               render={({ field }) => (
                 <FormItem>
@@ -215,8 +317,9 @@ export function UpdateLeadForm({ initialData, setOpen, leadSources, leadStatuses
                   <FormControl>
                     <Textarea
                       disabled={form.formState.isSubmitting}
-                      placeholder="New NextCRM functionality"
+                      placeholder="Additional notes"
                       {...field}
+                      value={field.value ?? ""}
                     />
                   </FormControl>
                   <FormMessage />

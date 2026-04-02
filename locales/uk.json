@@ -245,7 +245,12 @@
     "createSuccess": "Лід успішно створено",
     "updateSuccess": "Лід успішно оновлено",
     "lastNameRequired": "Прізвище є обов'язковим",
-    "emailInvalid": "Введіть дійсну адресу електронної пошти"
+    "emailInvalid": "Введіть дійсну адресу електронної пошти",
+    "propertyAddress": "Адреса об'єкта",
+    "propertyCity": "Місто",
+    "propertyState": "Область",
+    "propertyZip": "Індекс",
+    "request": "Що потрібно?"
   },
   "CrmContractForm": {
     "title": "Назва",

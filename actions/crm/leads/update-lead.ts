@@ -23,6 +23,11 @@ export const updateLead = async (data: {
   campaign?: string | null;
   assigned_to?: string;
   accountIDs?: string;
+  property_address?: string;
+  property_city?: string;
+  property_state?: string;
+  property_zip?: string;
+  request?: string;
 }) => {
   const session = await getServerSession(authOptions);
   if (!session) return { error: "Unauthorized" };
@@ -44,6 +49,11 @@ export const updateLead = async (data: {
     campaign,
     assigned_to,
     accountIDs,
+    property_address,
+    property_city,
+    property_state,
+    property_zip,
+    request,
   } = data;
 
   if (!id) return { error: "id is required" };
@@ -69,6 +79,11 @@ export const updateLead = async (data: {
         campaign,
         assigned_to: assigned_to || userId,
         accountsIDs: accountIDs,
+        property_address,
+        property_city,
+        property_state,
+        property_zip,
+        request,
       },
     });
 

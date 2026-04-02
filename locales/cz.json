@@ -248,7 +248,12 @@
     "createSuccess": "Lead úspěšně vytvořen",
     "updateSuccess": "Lead úspěšně aktualizován",
     "lastNameRequired": "Příjmení je povinné",
-    "emailInvalid": "Zadejte platnou e-mailovou adresu"
+    "emailInvalid": "Zadejte platnou e-mailovou adresu",
+    "propertyAddress": "Adresa nemovitosti",
+    "propertyCity": "Město",
+    "propertyState": "Stát",
+    "propertyZip": "PSČ",
+    "request": "Co potřebují?"
   },
   "CrmContractForm": {
     "title": "Název",

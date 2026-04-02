@@ -246,7 +246,12 @@
     "createSuccess": "Lead created successfully",
     "updateSuccess": "Lead updated successfully",
     "lastNameRequired": "Last name is required",
-    "emailInvalid": "Please enter a valid email address"
+    "emailInvalid": "Please enter a valid email address",
+    "propertyAddress": "Property address",
+    "propertyCity": "City",
+    "propertyState": "State",
+    "propertyZip": "Zip",
+    "request": "What do they need?"
   },
   "CrmContractForm": {
     "title": "Title",

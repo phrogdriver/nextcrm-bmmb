@@ -245,7 +245,12 @@
     "createSuccess": "Lead erfolgreich erstellt",
     "updateSuccess": "Lead erfolgreich aktualisiert",
     "lastNameRequired": "Nachname ist erforderlich",
-    "emailInvalid": "Bitte geben Sie eine gültige E-Mail-Adresse ein"
+    "emailInvalid": "Bitte geben Sie eine gültige E-Mail-Adresse ein",
+    "propertyAddress": "Objektadresse",
+    "propertyCity": "Stadt",
+    "propertyState": "Bundesland",
+    "propertyZip": "PLZ",
+    "request": "Was wird benötigt?"
   },
   "CrmContractForm": {
     "title": "Titel",
