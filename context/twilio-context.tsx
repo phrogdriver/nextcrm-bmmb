@@ -158,26 +158,33 @@ export function TwilioProvider({ children }: { children: ReactNode }) {
         deviceRef.current = device;
 
         // ── Conversations SDK ──
-        const convClient = new ConversationsClient(token);
+        try {
+          const convClient = new ConversationsClient(token);
 
-        convClient.on("stateChanged", (state) => {
-          if (state === "initialized" && mounted) {
-            setIsMessagingReady(true);
-          }
-        });
+          convClient.on("stateChanged", (state) => {
+            console.log("[Conversations] State:", state);
+            if (state === "initialized" && mounted) {
+              setIsMessagingReady(true);
+            }
+            if (state === "failed") {
+              console.error("[Conversations] Client failed to initialize");
+            }
+          });
 
-        // Listen for new conversations being added (e.g., inbound SMS)
-        convClient.on("conversationAdded", (conv: Conversation) => {
-          // Auto-subscribe to message events on new conversations
-          conv.on("messageAdded", emitMessage);
-          subscribedConvsRef.current.set(conv.sid, conv);
-        });
+          convClient.on("conversationAdded", (conv: Conversation) => {
+            console.log("[Conversations] Conversation added:", conv.sid);
+            conv.on("messageAdded", emitMessage);
+            subscribedConvsRef.current.set(conv.sid, conv);
+          });
 
-        convClient.on("connectionError", (error) => {
-          console.error("Conversations connection error:", error);
-        });
+          convClient.on("connectionError", (error) => {
+            console.error("[Conversations] Connection error:", error);
+          });
 
-        conversationsClientRef.current = convClient;
+          conversationsClientRef.current = convClient;
+        } catch (convErr) {
+          console.error("[Conversations] Failed to create client:", convErr);
+        }
       } catch (err) {
         console.error("Failed to initialize Twilio:", err);
       }
