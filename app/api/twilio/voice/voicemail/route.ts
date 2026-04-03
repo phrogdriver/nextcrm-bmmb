@@ -5,10 +5,11 @@ import { prismadb } from "@/lib/prisma";
 const VoiceResponse = twilio.twiml.VoiceResponse;
 
 /**
- * Voicemail handler — called after <Record> completes.
- * Also receives transcription callback (TranscriptionText).
+ * Voicemail handler — called in two scenarios:
+ * 1. Record action URL (immediately after recording) — creates the activity
+ * 2. Transcription callback (later, async) — updates existing activity with transcription
  *
- * Saves the recording as an activity linked to the conversation.
+ * We distinguish them by checking for TranscriptionStatus.
  */
 export async function POST(request: Request) {
   const formData = await request.formData();
@@ -21,6 +22,7 @@ export async function POST(request: Request) {
   const recordingUrl = body.RecordingUrl ?? null;
   const recordingDuration = body.RecordingDuration ? parseInt(body.RecordingDuration, 10) : null;
   const transcriptionText = body.TranscriptionText ?? null;
+  const isTranscriptionCallback = !!body.TranscriptionStatus;
 
   // Find the conversation for this call
   let conversation = await (prismadb as any).crm_Conversations.findFirst({
@@ -39,6 +41,32 @@ export async function POST(request: Request) {
     });
   }
 
+  if (isTranscriptionCallback && transcriptionText && conversation) {
+    // Transcription callback — find and update existing voicemail activity
+    const existingLink = await (prismadb as any).crm_ActivityLinks.findFirst({
+      where: { entityType: "conversation", entityId: conversation.id },
+      include: { activity: true },
+      orderBy: { activity: { createdAt: "desc" } },
+    });
+
+    if (existingLink?.activity?.type === "voicemail") {
+      await (prismadb as any).crm_Activities.update({
+        where: { id: existingLink.activity.id },
+        data: {
+          description: transcriptionText,
+          metadata: {
+            ...(existingLink.activity.metadata as any),
+            transcriptionText,
+          },
+        },
+      });
+      console.log("[voicemail] Updated transcription on activity:", existingLink.activity.id);
+    }
+
+    return NextResponse.json({ ok: true });
+  }
+
+  // Record action — create the voicemail activity
   if (conversation && recordingUrl) {
     const activity = await (prismadb as any).crm_Activities.create({
       data: {
