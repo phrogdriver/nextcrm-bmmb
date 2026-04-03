@@ -63,6 +63,14 @@ export async function POST(request: Request) {
     ];
     if (conversation.contactId) {
       links.push({ activityId: activity.id, entityType: "contact", entityId: conversation.contactId });
+
+      const contactOpps = await (prismadb as any).contactsToOpportunities.findMany({
+        where: { contact_id: conversation.contactId },
+        select: { opportunity_id: true },
+      });
+      for (const co of contactOpps) {
+        links.push({ activityId: activity.id, entityType: "opportunity", entityId: co.opportunity_id });
+      }
     }
     if (conversation.leadId) {
       links.push({ activityId: activity.id, entityType: "lead", entityId: conversation.leadId });
