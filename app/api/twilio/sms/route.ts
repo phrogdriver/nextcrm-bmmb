@@ -32,11 +32,10 @@ export async function POST(request: Request) {
     where: { phoneNumber: to },
   });
 
-  // Find any open conversation for this phone number (regardless of channel)
+  // Find any conversation for this phone number — reopen if closed
   let conversation = await (prismadb as any).crm_Conversations.findFirst({
     where: {
       phoneNumber: from,
-      status: "open",
       deletedAt: null,
     },
     orderBy: { lastActivityAt: "desc" },
@@ -88,7 +87,7 @@ export async function POST(request: Request) {
   // Update conversation timestamp
   await (prismadb as any).crm_Conversations.update({
     where: { id: conversation.id },
-    data: { lastActivityAt: new Date() },
+    data: { status: "open", lastActivityAt: new Date() },
   });
 
   // Return empty TwiML (no auto-reply for now)

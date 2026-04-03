@@ -82,11 +82,10 @@ async function handleInbound(
     where: { phoneNumber: to },
   });
 
-  // Find any open conversation for this phone number (regardless of channel)
+  // Find any conversation for this phone number — reopen if closed
   let conversation = await (prismadb as any).crm_Conversations.findFirst({
     where: {
       phoneNumber: from,
-      status: "open",
       deletedAt: null,
     },
     orderBy: { lastActivityAt: "desc" },
@@ -126,6 +125,7 @@ async function handleInbound(
     await (prismadb as any).crm_Conversations.update({
       where: { id: conversation.id },
       data: {
+        status: "open", // reopen if closed
         twilioCallSid: callSid,
         twilioCallStatus: "ringing",
         callDirection: "inbound",

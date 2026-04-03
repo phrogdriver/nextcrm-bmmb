@@ -42,6 +42,7 @@ import { sendSms } from "@/actions/crm/conversations/send-sms";
 import { placeCall } from "@/actions/crm/conversations/place-call";
 import { searchCustomerByPhone, type CustomerMatch } from "@/actions/crm/conversations/search-customer-by-phone";
 import { createLead } from "@/actions/crm/leads/create-lead";
+import { dispositionCall } from "@/actions/crm/conversations/disposition-call";
 
 // ── Types ────────────────────────────────────────────────
 
@@ -131,7 +132,17 @@ function MessageBubble({ msg }: { msg: MessageItem }) {
 
 // ── Call Activity Pill ───────────────────────────────────
 
-function CallPill({ activity }: { activity: ActivityWithLinks }) {
+const DISPOSITION_LABELS: Record<string, string> = {
+  booked: "Booked",
+  not_interested: "Not Interested",
+  wrong_number: "Wrong Number",
+  spam: "Spam",
+  existing_customer: "Existing Customer",
+  no_response: "No Response",
+};
+
+function CallPill({ activity, onDispositioned }: { activity: ActivityWithLinks & { disposition?: string | null }; onDispositioned: () => void }) {
+  const [showDisposition, setShowDisposition] = useState(false);
   const metadata = activity.metadata as { direction?: string; recordingUrl?: string } | null;
   const direction = metadata?.direction ?? "inbound";
   const DirIcon = direction === "inbound" ? PhoneIncoming : PhoneOutgoing;
@@ -140,13 +151,86 @@ function CallPill({ activity }: { activity: ActivityWithLinks }) {
   const durationStr = activity.duration ? `${mins}:${secs.toString().padStart(2, "0")}` : "";
 
   return (
-    <div className="flex justify-center my-3">
-      <div className="flex items-center gap-2 bg-muted px-4 py-2 rounded-full text-sm text-muted-foreground">
-        <DirIcon className="h-3.5 w-3.5" />
-        <span>{direction === "inbound" ? "Inbound" : "Outbound"} call</span>
-        {activity.outcome && <span>&middot; {activity.outcome}</span>}
-        {durationStr && <span>&middot; {durationStr}</span>}
-        <span className="text-xs">{format(new Date(activity.date), "MMM d, h:mm a")}</span>
+    <div className="my-3">
+      <div className="flex justify-center">
+        <div className="flex items-center gap-2 bg-muted px-4 py-2 rounded-full text-sm text-muted-foreground">
+          <DirIcon className="h-3.5 w-3.5" />
+          <span>{direction === "inbound" ? "Inbound" : "Outbound"} call</span>
+          {activity.outcome && <span>&middot; {activity.outcome}</span>}
+          {durationStr && <span>&middot; {durationStr}</span>}
+          <span className="text-xs">{format(new Date(activity.date), "MMM d, h:mm a")}</span>
+        </div>
+      </div>
+      {/* Disposition badge or button */}
+      <div className="flex justify-center mt-1">
+        {activity.disposition ? (
+          <Badge variant="outline" className="text-xs">
+            {DISPOSITION_LABELS[activity.disposition] ?? activity.disposition}
+          </Badge>
+        ) : (
+          <Button
+            variant="outline"
+            size="sm"
+            className="h-6 text-xs"
+            onClick={() => setShowDisposition(true)}
+          >
+            Disposition
+          </Button>
+        )}
+      </div>
+      {showDisposition && (
+        <DispositionPopover
+          activityId={activity.id}
+          onClose={() => setShowDisposition(false)}
+          onDone={() => { setShowDisposition(false); onDispositioned(); }}
+        />
+      )}
+    </div>
+  );
+}
+
+// ── Disposition Popover ──────────────────────────────────
+
+function DispositionPopover({
+  activityId, onClose, onDone,
+}: {
+  activityId: string; onClose: () => void; onDone: () => void;
+}) {
+  const [submitting, setSubmitting] = useState(false);
+
+  const handleDisposition = async (disposition: string) => {
+    setSubmitting(true);
+    const result = await dispositionCall({
+      activityId,
+      disposition: disposition as any,
+    });
+    setSubmitting(false);
+    if (result.error) {
+      toast.error(result.error);
+    } else {
+      toast.success(`Call dispositioned as ${DISPOSITION_LABELS[disposition]}`);
+      onDone();
+    }
+  };
+
+  return (
+    <div className="flex justify-center mt-2">
+      <div className="bg-background border rounded-lg shadow-lg p-2 flex flex-wrap gap-1 max-w-sm">
+        {Object.entries(DISPOSITION_LABELS).map(([key, label]) => (
+          <Button
+            key={key}
+            variant="ghost"
+            size="sm"
+            className="h-7 text-xs"
+            disabled={submitting}
+            onClick={() => handleDisposition(key)}
+          >
+            {label}
+          </Button>
+        ))}
+        <Button variant="ghost" size="sm" className="h-7 text-xs text-muted-foreground" onClick={onClose}>
+          Cancel
+        </Button>
       </div>
     </div>
   );
@@ -848,7 +932,7 @@ export function ConversationsLive({ initialConversations }: Props) {
                       item.type === "message" ? (
                         <MessageBubble key={`msg-${item.data.id}`} msg={item.data} />
                       ) : (
-                        <CallPill key={`call-${item.data.id}`} activity={item.data} />
+                        <CallPill key={`call-${item.data.id}`} activity={item.data} onDispositioned={() => { if (selectedId) loadDetail(selectedId); refreshList(); }} />
                       )
                     );
                   })()}

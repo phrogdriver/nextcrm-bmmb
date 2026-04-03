@@ -673,6 +673,13 @@ model crm_Activities {
   outcome     String?
   status      crm_Activity_Status  @default(scheduled)
   metadata    Json?                @db.JsonB
+
+  // Call disposition (call type only — required before conversation can close)
+  disposition     crm_Call_Disposition?
+  dispositionNote String?
+  dispositionAt   DateTime?
+  dispositionBy   String?              @db.Uuid
+
   createdBy   String?              @db.Uuid
   updatedBy   String?              @db.Uuid
   createdAt   DateTime             @default(now())
@@ -680,11 +687,13 @@ model crm_Activities {
 
   created_by_user Users?              @relation("activity_created_by", fields: [createdBy], references: [id])
   updated_by_user Users?              @relation("activity_updated_by", fields: [updatedBy], references: [id])
+  disposition_by_user Users?          @relation("activity_disposition_by", fields: [dispositionBy], references: [id])
   links       crm_ActivityLinks[]
 
   @@index([date])
   @@index([type])
   @@index([status])
+  @@index([disposition])
   @@index([createdBy])
   @@index([createdAt])
 }
@@ -706,6 +715,15 @@ model crm_ActivityLinks {
 enum crm_Conversation_Status {
   open
   closed
+}
+
+enum crm_Call_Disposition {
+  booked
+  not_interested
+  wrong_number
+  spam
+  existing_customer
+  no_response
 }
 
 model crm_Conversations {
@@ -1169,6 +1187,7 @@ model Users {
   auditLogs                      crm_AuditLog[]
   activities_created             crm_Activities[]  @relation("activity_created_by")
   activities_updated             crm_Activities[]  @relation("activity_updated_by")
+  activities_dispositioned       crm_Activities[]  @relation("activity_disposition_by")
   superintendent_jobs            crm_Opportunities[]  @relation("job_superintendent")
   stage_transitions              crm_Stage_Transitions[]
   assigned_invoices              Invoices[]            @relation("assigned_invoices")

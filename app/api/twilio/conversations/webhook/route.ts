@@ -105,10 +105,10 @@ async function handleMessageAdded(body: Record<string, string>) {
     },
   });
 
-  // Update conversation timestamp
+  // Update conversation timestamp and reopen if closed
   await (prismadb as any).crm_Conversations.update({
     where: { id: conversation.id },
-    data: { lastActivityAt: new Date() },
+    data: { status: "open", lastActivityAt: new Date() },
   });
 }
 

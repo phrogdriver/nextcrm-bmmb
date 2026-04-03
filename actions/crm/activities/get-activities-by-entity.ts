@@ -13,6 +13,9 @@ export type ActivityWithLinks = {
   outcome: string | null;
   status: "scheduled" | "completed" | "cancelled";
   metadata: unknown;
+  disposition: string | null;
+  dispositionNote: string | null;
+  dispositionAt: Date | null;
   createdAt: Date;
   createdBy: string | null;
   created_by_user: { id: string; name: string | null; avatar: string | null } | null;
