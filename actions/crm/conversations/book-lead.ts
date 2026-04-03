@@ -151,6 +151,14 @@ export const bookLead = async (data: {
           },
         });
 
+        // Link contact to job via junction table
+        await (tx as any).contactsToOpportunities.create({
+          data: {
+            contact_id: contact.id,
+            opportunity_id: job.id,
+          },
+        });
+
         // Link activities to job
         if (activityIds.length > 0) {
           await (tx as any).crm_ActivityLinks.createMany({
