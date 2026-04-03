@@ -4,7 +4,7 @@ import { authOptions } from "@/lib/auth";
 import { twilioClient } from "@/lib/twilio/client";
 
 /**
- * Adds "crm-agent" as a participant to a Twilio Conversation.
+ * Adds the current user as a participant to a Twilio Conversation.
  * Called by the browser when the Conversations SDK gets "Forbidden"
  * trying to subscribe to a conversation.
  */
@@ -28,7 +28,7 @@ export async function POST(request: Request) {
     await twilioClient.conversations.v1
       .services(serviceSid)
       .conversations(conversationSid)
-      .participants.create({ identity: "crm-agent" });
+      .participants.create({ identity: `agent-${session.user.id}` });
 
     return NextResponse.json({ ok: true });
   } catch (err: any) {

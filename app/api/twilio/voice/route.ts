@@ -19,7 +19,7 @@ export async function POST(request: Request) {
   // Browser-originated calls come via the TwiML App with Direction = undefined
   // or "outbound-api". Inbound calls from PSTN have Direction = "inbound".
   // The key distinction: inbound calls have From = caller, To = our Twilio number.
-  // Browser outbound calls have From = "client:crm-agent", To = the number to dial.
+  // Browser outbound calls have From = "client:agent-{userId}", To = the number to dial.
   const isFromBrowser = body.From?.startsWith("client:");
 
   if (isFromBrowser) {
@@ -134,18 +134,40 @@ async function handleInbound(
     });
   }
 
-  // Ring browser clients
-  // Use action URL (not statusCallback) — guaranteed to fire after Dial ends
-  const actionUrl = `${process.env.NEXT_PUBLIC_APP_URL}/api/twilio/voice/status`;
-
   const twiml = new VoiceResponse();
-  const dial = twiml.dial({
-    callerId: from,
-    timeout: 30,
-    action: actionUrl,
-    method: "POST",
-  });
-  dial.client("crm-agent");
+  const workflowSid = process.env.TWILIO_WORKFLOW_SID;
+
+  if (workflowSid) {
+    // TaskRouter: enqueue the call so it gets routed to the best available agent.
+    // The assignment callback (/api/twilio/taskrouter/assignment) connects the call.
+    // waitUrl plays hold music/message while in queue.
+    // If no agent answers within the workflow timeout, Twilio falls through
+    // to the next TwiML verb (the voicemail Record below).
+    const enqueue = twiml.enqueue({
+      workflowSid,
+      waitUrl: `${process.env.NEXT_PUBLIC_APP_URL}/api/twilio/voice/wait`,
+      waitUrlMethod: "POST",
+      action: `${process.env.NEXT_PUBLIC_APP_URL}/api/twilio/voice/status`,
+      method: "POST",
+    });
+    enqueue.task(JSON.stringify({
+      from,
+      to,
+      call_sid: callSid,
+      conversation_id: conversation.id,
+      tracking_number_id: trackingNumber?.id ?? null,
+    }));
+  } else {
+    // Fallback: direct dial if TaskRouter not configured
+    const actionUrl = `${process.env.NEXT_PUBLIC_APP_URL}/api/twilio/voice/status`;
+    const dial = twiml.dial({
+      callerId: from,
+      timeout: 30,
+      action: actionUrl,
+      method: "POST",
+    });
+    dial.client("crm-agent");
+  }
 
   return new NextResponse(twiml.toString(), {
     headers: { "Content-Type": "text/xml" },

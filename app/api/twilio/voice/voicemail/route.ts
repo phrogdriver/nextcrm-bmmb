@@ -1,0 +1,91 @@
+import { NextResponse } from "next/server";
+import twilio from "twilio";
+import { prismadb } from "@/lib/prisma";
+
+const VoiceResponse = twilio.twiml.VoiceResponse;
+
+/**
+ * Voicemail handler — called after <Record> completes.
+ * Also receives transcription callback (TranscriptionText).
+ *
+ * Saves the recording as an activity linked to the conversation.
+ */
+export async function POST(request: Request) {
+  const formData = await request.formData();
+  const body = Object.fromEntries(formData.entries()) as Record<string, string>;
+
+  console.log("[voicemail] Params:", JSON.stringify(body));
+
+  const callSid = body.CallSid;
+  const from = body.From ?? body.Caller ?? "";
+  const recordingUrl = body.RecordingUrl ?? null;
+  const recordingDuration = body.RecordingDuration ? parseInt(body.RecordingDuration, 10) : null;
+  const transcriptionText = body.TranscriptionText ?? null;
+
+  // Find the conversation for this call
+  let conversation = await (prismadb as any).crm_Conversations.findFirst({
+    where: { twilioCallSid: callSid },
+  });
+
+  if (!conversation) {
+    const digits = from.replace(/\D/g, "").slice(-10);
+    conversation = await (prismadb as any).crm_Conversations.findFirst({
+      where: {
+        phoneNumber: { contains: digits },
+        status: "open",
+        deletedAt: null,
+      },
+      orderBy: { lastActivityAt: "desc" },
+    });
+  }
+
+  if (conversation && recordingUrl) {
+    const activity = await (prismadb as any).crm_Activities.create({
+      data: {
+        type: "voicemail",
+        title: `Voicemail from ${from}`,
+        description: transcriptionText,
+        date: new Date(),
+        duration: recordingDuration,
+        outcome: "voicemail",
+        status: "completed",
+        metadata: {
+          direction: "inbound",
+          twilioCallSid: callSid,
+          recordingUrl,
+          transcriptionText,
+        },
+      },
+    });
+
+    const links: Array<{ activityId: string; entityType: string; entityId: string }> = [
+      { activityId: activity.id, entityType: "conversation", entityId: conversation.id },
+    ];
+    if (conversation.contactId) {
+      links.push({ activityId: activity.id, entityType: "contact", entityId: conversation.contactId });
+    }
+    if (conversation.leadId) {
+      links.push({ activityId: activity.id, entityType: "lead", entityId: conversation.leadId });
+    }
+
+    await (prismadb as any).crm_ActivityLinks.createMany({ data: links });
+
+    await (prismadb as any).crm_Conversations.update({
+      where: { id: conversation.id },
+      data: { lastActivityAt: new Date() },
+    });
+
+    console.log("[voicemail] Activity created:", activity.id, "recording:", recordingUrl);
+  } else {
+    console.log("[voicemail] No conversation or no recording for:", from);
+  }
+
+  // End the call
+  const twiml = new VoiceResponse();
+  twiml.say({ voice: "Polly.Joanna" }, "Thank you. Goodbye.");
+  twiml.hangup();
+
+  return new NextResponse(twiml.toString(), {
+    headers: { "Content-Type": "text/xml" },
+  });
+}

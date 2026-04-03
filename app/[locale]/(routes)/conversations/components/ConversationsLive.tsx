@@ -29,7 +29,10 @@ import {
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 
+import { Circle } from "lucide-react";
+import { Switch } from "@/components/ui/switch";
 import { useTwilio } from "@/context/twilio-context";
+import { setAvailability, getAvailability, type AgentAvailability } from "@/actions/crm/conversations/set-availability";
 import {
   getConversations,
   type ConversationListItem,
@@ -951,6 +954,14 @@ export function ConversationsLive({ initialConversations }: Props) {
   const [composeText, setComposeText] = useState("");
   const [sending, setSending] = useState(false);
 
+  // Agent availability
+  const [availability, setAvailabilityState] = useState<AgentAvailability | null>(null);
+  const [availLoading, setAvailLoading] = useState(false);
+
+  useEffect(() => {
+    getAvailability().then(setAvailabilityState);
+  }, []);
+
   const filteredConversations = conversations.filter(
     (c) => filter === "all" || c.status === filter
   );
@@ -1101,10 +1112,36 @@ export function ConversationsLive({ initialConversations }: Props) {
           <div className="flex-shrink-0 p-4 space-y-3 border-b">
             <div className="flex items-center justify-between">
               <h2 className="text-base font-semibold">Conversations</h2>
-              <Button size="sm" onClick={() => setNewSheetOpen(true)}>
-                <Plus className="h-4 w-4 mr-1" />
-                New
-              </Button>
+              <div className="flex items-center gap-2">
+                {availability !== null && (
+                  <div className="flex items-center gap-1.5">
+                    <Circle className={cn(
+                      "h-2 w-2 fill-current",
+                      availability === "available" ? "text-green-500" : "text-muted-foreground"
+                    )} />
+                    <Switch
+                      checked={availability === "available"}
+                      disabled={availLoading}
+                      onCheckedChange={async (checked) => {
+                        const newStatus = checked ? "available" : "unavailable";
+                        setAvailLoading(true);
+                        const result = await setAvailability(newStatus);
+                        if (result.error) {
+                          toast.error(result.error);
+                        } else {
+                          setAvailabilityState(newStatus);
+                        }
+                        setAvailLoading(false);
+                      }}
+                      className="scale-75"
+                    />
+                  </div>
+                )}
+                <Button size="sm" onClick={() => setNewSheetOpen(true)}>
+                  <Plus className="h-4 w-4 mr-1" />
+                  New
+                </Button>
+              </div>
             </div>
             <div className="relative">
               <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />

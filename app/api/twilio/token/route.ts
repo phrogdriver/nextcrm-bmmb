@@ -23,8 +23,12 @@ export async function POST() {
     return NextResponse.json({ error: "Twilio not configured" }, { status: 500 });
   }
 
+  // Each user gets a unique identity so TaskRouter can route calls to them individually.
+  // Falls back to "crm-agent" if user has no ID (shouldn't happen).
+  const identity = `agent-${session.user.id}`;
+
   const token = new AccessToken(accountSid, apiKeySid, apiKeySecret, {
-    identity: "crm-agent",
+    identity,
     ttl: 3600,
   });
 
@@ -47,6 +51,6 @@ export async function POST() {
 
   return NextResponse.json({
     token: token.toJwt(),
-    identity: "crm-agent",
+    identity,
   });
 }
