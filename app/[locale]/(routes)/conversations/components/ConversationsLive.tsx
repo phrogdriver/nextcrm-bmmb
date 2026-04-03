@@ -454,11 +454,16 @@ function BookLeadSheet({
     }
   }, [open, leadSources.length]);
 
+  const [propertyLat, setPropertyLat] = useState<number | null>(null);
+  const [propertyLng, setPropertyLng] = useState<number | null>(null);
+
   const handleAddressSelect = (parsed: ParsedAddress) => {
     setPropertyAddress(parsed.address);
     setPropertyCity(parsed.city);
     setPropertyState(parsed.state);
     setPropertyZip(parsed.zip);
+    setPropertyLat(parsed.lat);
+    setPropertyLng(parsed.lng);
   };
 
   const handleNextStep = async () => {
@@ -484,6 +489,8 @@ function BookLeadSheet({
       propertyCity: propertyCity || undefined,
       propertyState: propertyState || undefined,
       propertyZip: propertyZip || undefined,
+      propertyLat: propertyLat ?? undefined,
+      propertyLng: propertyLng ?? undefined,
       leadSourceId: leadSourceId || undefined,
       conversationId,
       schedule: withSchedule ? {
@@ -503,7 +510,8 @@ function BookLeadSheet({
     // Reset
     setStep("info"); setFirstName(""); setLastName(""); setRequest("");
     setPropertyAddress(""); setPropertyCity(""); setPropertyState("CO"); setPropertyZip("");
-    setLeadSourceId(""); setAssignedTo(""); setSchedDate(""); setSchedTime("10:00"); setSchedNotes(""); setSchedTz("America/Denver");
+    setLeadSourceId(""); setPropertyLat(null); setPropertyLng(null);
+    setAssignedTo(""); setSchedDate(""); setSchedTime("10:00"); setSchedNotes(""); setSchedTz("America/Denver");
     onOpenChange(false);
     onCreated();
   };

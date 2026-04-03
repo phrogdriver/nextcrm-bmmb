@@ -22,6 +22,8 @@ export const bookLead = async (data: {
   propertyCity?: string;
   propertyState?: string;
   propertyZip?: string;
+  propertyLat?: number;
+  propertyLng?: number;
   leadSourceId?: string;
   // Conversation link
   conversationId: string;
@@ -82,7 +84,39 @@ export const bookLead = async (data: {
         });
       }
 
-      // 4. Create account (customer)
+      // 4. Check/create property
+      let property: any = null;
+      if (data.propertyAddress) {
+        // Search for existing property by address
+        property = await (tx as any).crm_Properties.findFirst({
+          where: {
+            address: data.propertyAddress,
+            deletedAt: null,
+          },
+        });
+
+        if (!property) {
+          property = await (tx as any).crm_Properties.create({
+            data: {
+              address: data.propertyAddress,
+              city: data.propertyCity,
+              state: data.propertyState,
+              zip: data.propertyZip,
+              lat: data.propertyLat,
+              lng: data.propertyLng,
+              createdBy: userId,
+            },
+          });
+        }
+
+        // Update lead with property link
+        await (tx as any).crm_Leads.update({
+          where: { id: lead.id },
+          data: { converted_to_property: property.id },
+        });
+      }
+
+      // 5. Create account (customer)
       const customerName = [data.firstName, data.lastName].filter(Boolean).join(" ");
       const account = await (tx as any).crm_Accounts.create({
         data: {
@@ -107,6 +141,14 @@ export const bookLead = async (data: {
           accountsIDs: account.id,
         },
       });
+
+      // Set property owner to contact
+      if (property) {
+        await (tx as any).crm_Properties.update({
+          where: { id: property.id },
+          data: { owner_id: contact.id },
+        });
+      }
 
       // Link conversation to contact
       await (tx as any).crm_Conversations.update({
@@ -162,6 +204,7 @@ export const bookLead = async (data: {
             updatedBy: userId,
             account: account.id,
             contact: contact.id,
+            property_id: property?.id ?? undefined,
           },
         });
 
