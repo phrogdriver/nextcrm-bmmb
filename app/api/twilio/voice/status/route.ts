@@ -64,14 +64,47 @@ export async function POST(request: Request) {
     });
   }
 
-  const outcome = queueResult === "bridged" ? (dialStatus || "completed") : dialStatus;
-  console.log("[voice/status] Conversation:", conversation?.id, "direction:", direction, "status:", outcome, "duration:", dialDuration);
+  // Determine human-readable outcome
+  // QueueResult: "bridged" (answered), "hangup" (caller hung up), "queue-full", "error", "leave", "system-error"
+  // DialCallStatus: "completed", "no-answer", "busy", "failed", "canceled"
+  let outcome: string;
+  let callTitle: string;
+  const dirLabel = direction === "inbound" ? "Inbound" : "Outbound";
+
+  if (queueResult === "bridged") {
+    // Call was answered
+    outcome = dialStatus === "completed" ? "answered" : (dialStatus || "answered");
+    callTitle = `${dirLabel} call — answered`;
+  } else if (queueResult === "hangup") {
+    // Caller hung up before anyone answered
+    outcome = "missed";
+    callTitle = `${dirLabel} call — missed (caller hung up)`;
+  } else if (queueResult) {
+    // Queue timeout or error — voicemail path handles this above, but just in case
+    outcome = "no-answer";
+    callTitle = `${dirLabel} call — no answer`;
+  } else if (dialStatus === "completed" && dialDuration && dialDuration > 0) {
+    // Direct dial (non-TaskRouter) that was answered
+    outcome = "answered";
+    callTitle = `${dirLabel} call — answered`;
+  } else if (dialStatus === "no-answer" || dialStatus === "busy" || dialStatus === "canceled") {
+    outcome = dialStatus;
+    callTitle = `${dirLabel} call — ${dialStatus.replace("-", " ")}`;
+  } else if (dialStatus === "completed" && (!dialDuration || dialDuration === 0)) {
+    outcome = "missed";
+    callTitle = `${dirLabel} call — missed`;
+  } else {
+    outcome = dialStatus || "unknown";
+    callTitle = `${dirLabel} call — ${outcome}`;
+  }
+
+  console.log("[voice/status] Conversation:", conversation?.id, "direction:", direction, "outcome:", outcome, "queueResult:", queueResult, "dialStatus:", dialStatus, "duration:", dialDuration);
 
   if (conversation) {
     const activity = await (prismadb as any).crm_Activities.create({
       data: {
         type: "call",
-        title: `${direction === "inbound" ? "Inbound" : "Outbound"} call — ${outcome}`,
+        title: callTitle,
         date: new Date(),
         duration: dialDuration,
         outcome,
@@ -80,6 +113,7 @@ export async function POST(request: Request) {
           direction,
           twilioCallSid: callSid,
           recordingUrl,
+          queueResult: queueResult || undefined,
         },
       },
     });

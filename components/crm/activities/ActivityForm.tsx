@@ -22,11 +22,12 @@ import { createActivity } from "@/actions/crm/activities/create-activity";
 import { updateActivity } from "@/actions/crm/activities/update-activity";
 import type { ActivityWithLinks } from "@/actions/crm/activities/get-activities-by-entity";
 
-type ActivityType = "call" | "meeting" | "note" | "email";
+type ActivityType = "call" | "voicemail" | "meeting" | "note" | "email";
 type ActivityStatus = "scheduled" | "completed" | "cancelled";
 
 const DEFAULT_STATUS: Record<ActivityType, ActivityStatus> = {
   call: "scheduled",
+  voicemail: "completed",
   meeting: "scheduled",
   note: "completed",
   email: "completed",

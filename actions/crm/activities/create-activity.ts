@@ -13,7 +13,7 @@ const ENTITY_SLUGS: Record<string, string> = {
 };
 
 export const createActivity = async (data: {
-  type: "call" | "meeting" | "note" | "email";
+  type: "call" | "voicemail" | "meeting" | "note" | "email";
   title: string;
   description?: string;
   date: Date;

@@ -1,7 +1,7 @@
 "use client";
 import { useState } from "react";
 import { formatDistanceToNow } from "date-fns";
-import { Phone, Users, FileText, Mail, Pencil, Trash2 } from "lucide-react";
+import { Phone, Voicemail, Users, FileText, Mail, Pencil, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -27,6 +27,7 @@ import type { ActivityWithLinks } from "@/actions/crm/activities/get-activities-
 
 const TYPE_ICONS = {
   call: Phone,
+  voicemail: Voicemail,
   meeting: Users,
   note: FileText,
   email: Mail,
@@ -34,6 +35,7 @@ const TYPE_ICONS = {
 
 const TYPE_LABELS = {
   call: "Call",
+  voicemail: "Voicemail",
   meeting: "Meeting",
   note: "Note",
   email: "Email",

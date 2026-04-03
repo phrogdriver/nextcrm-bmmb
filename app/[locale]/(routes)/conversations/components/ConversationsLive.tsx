@@ -154,18 +154,32 @@ function CallPill({ activity, onDispositioned }: { activity: ActivityWithLinks &
   const [showDisposition, setShowDisposition] = useState(false);
   const metadata = activity.metadata as { direction?: string; recordingUrl?: string } | null;
   const direction = metadata?.direction ?? "inbound";
-  const DirIcon = direction === "inbound" ? PhoneIncoming : PhoneOutgoing;
+  const isMissed = activity.outcome === "missed" || activity.outcome === "no-answer";
+  const isVoicemail = activity.type === "voicemail";
+  const DirIcon = isMissed ? PhoneOff : (direction === "inbound" ? PhoneIncoming : PhoneOutgoing);
   const mins = activity.duration ? Math.floor(activity.duration / 60) : 0;
   const secs = activity.duration ? activity.duration % 60 : 0;
   const durationStr = activity.duration ? `${mins}:${secs.toString().padStart(2, "0")}` : "";
 
+  const outcomeLabel = activity.outcome === "answered" ? "answered"
+    : activity.outcome === "missed" ? "missed"
+    : activity.outcome === "no-answer" ? "no answer"
+    : activity.outcome === "busy" ? "busy"
+    : activity.outcome === "voicemail" ? "voicemail"
+    : activity.outcome ?? "";
+
   return (
     <div className="my-3">
       <div className="flex justify-center">
-        <div className="flex items-center gap-2 bg-muted px-4 py-2 rounded-full text-sm text-muted-foreground">
+        <div className={cn(
+          "flex items-center gap-2 px-4 py-2 rounded-full text-sm",
+          isMissed ? "bg-red-50 text-red-600 dark:bg-red-950 dark:text-red-400"
+            : isVoicemail ? "bg-amber-50 text-amber-600 dark:bg-amber-950 dark:text-amber-400"
+            : "bg-muted text-muted-foreground"
+        )}>
           <DirIcon className="h-3.5 w-3.5" />
-          <span>{direction === "inbound" ? "Inbound" : "Outbound"} call</span>
-          {activity.outcome && <span>&middot; {activity.outcome}</span>}
+          <span>{isVoicemail ? "Voicemail" : `${direction === "inbound" ? "Inbound" : "Outbound"} call`}</span>
+          {outcomeLabel && !isVoicemail && <span>&middot; {outcomeLabel}</span>}
           {durationStr && <span>&middot; {durationStr}</span>}
           <span className="text-xs">{format(new Date(activity.date), "MMM d, h:mm a")}</span>
         </div>

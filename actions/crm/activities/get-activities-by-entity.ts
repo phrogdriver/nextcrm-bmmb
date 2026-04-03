@@ -5,7 +5,7 @@ const PAGE_SIZE = 25;
 
 export type ActivityWithLinks = {
   id: string;
-  type: "call" | "meeting" | "note" | "email";
+  type: "call" | "voicemail" | "meeting" | "note" | "email";
   title: string;
   description: string | null;
   date: Date;
