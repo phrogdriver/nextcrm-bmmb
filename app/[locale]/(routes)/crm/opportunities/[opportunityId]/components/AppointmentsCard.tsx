@@ -232,7 +232,8 @@ export function AppointmentsCard({ jobId, appointments }: AppointmentsCardProps)
                   <SelectItem value="ADJUSTER">Adjuster Visit</SelectItem>
                   <SelectItem value="SALES_VISIT">Sales Visit</SelectItem>
                   <SelectItem value="PRE_CONSTRUCTION">Pre-Construction</SelectItem>
-                  <SelectItem value="BUILD">Build Day</SelectItem>
+                  <SelectItem value="BUILD">Build Check</SelectItem>
+                  <SelectItem value="WORK_ORDER">Work Order</SelectItem>
                   <SelectItem value="DELIVERY">Delivery</SelectItem>
                   <SelectItem value="FINAL_WALKTHROUGH">Final Walkthrough</SelectItem>
                   <SelectItem value="WARRANTY">Warranty</SelectItem>
