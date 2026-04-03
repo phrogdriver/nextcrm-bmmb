@@ -81,8 +81,8 @@ function ThreadItem({
     <button
       onClick={onClick}
       className={cn(
-        "w-full flex items-start gap-3 p-4 text-left hover:bg-accent transition-colors border-b",
-        selected && "bg-accent",
+        "w-full flex items-start gap-3 p-4 text-left hover:bg-muted/50 transition-colors border-b",
+        selected && "bg-muted",
       )}
     >
       <Avatar className="h-10 w-10 mt-0.5 flex-shrink-0">
