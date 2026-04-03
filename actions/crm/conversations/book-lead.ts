@@ -124,21 +124,13 @@ export const bookLead = async (data: {
             name: `${data.firstName || ""} ${data.lastName} — Inspection`.trim(),
             description: data.request,
             budget: 0,
-            expected_close_date: startDateTime,
+            close_date: startDateTime,
             assigned_to: data.schedule.assignedTo,
             created_by: userId,
+            createdBy: userId,
             updatedBy: userId,
+            contact: contact.id,
           },
-        });
-
-        // Link contact to job
-        await (tx as any).contactsToOpportunities.create({
-          data: {
-            A: contact.id,
-            B: job.id,
-          },
-        }).catch(() => {
-          // Junction table might have different structure — skip if fails
         });
 
         // Link activities to job
