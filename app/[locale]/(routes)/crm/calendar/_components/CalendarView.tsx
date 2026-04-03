@@ -18,7 +18,9 @@ import { DateNavigation } from "./DateNavigation";
 import { ScheduleGrid } from "./ScheduleGrid";
 import { SalesGrid } from "./SalesGrid";
 import { ProductionGrid } from "./ProductionGrid";
+import { AppointmentSheet } from "./AppointmentSheet";
 import type {
+  CalendarAppointment,
   CalendarData,
   CalendarTab,
   ProductionCalendarData,
@@ -47,10 +49,25 @@ export function CalendarView({ initialData, initialDate }: CalendarViewProps) {
   const [isPending, startTransition] = useTransition();
 
   // Per-tab data
+  const emptyCalendar: CalendarData = { users: [], appointments: [] };
+  const emptyProduction: ProductionCalendarData = { appointments: [], purchaseOrders: [], jobs: [] };
+
   const [companyData, setCompanyData] = useState<CalendarData>(initialData);
-  const [salesData, setSalesData] = useState<CalendarData | null>(null);
-  const [productionData, setProductionData] = useState<ProductionCalendarData | null>(null);
-  const [crewData, setCrewData] = useState<CalendarData | null>(null);
+  const [salesData, setSalesData] = useState<CalendarData>(emptyCalendar);
+  const [productionData, setProductionData] = useState<ProductionCalendarData>(emptyProduction);
+  const [crewData, setCrewData] = useState<CalendarData>(emptyCalendar);
+
+  // Appointment edit sheet
+  const [editingAppointment, setEditingAppointment] = useState<CalendarAppointment | null>(null);
+  const [sheetOpen, setSheetOpen] = useState(false);
+
+  const handleAppointmentClick = useCallback((appt: CalendarAppointment) => {
+    setEditingAppointment(appt);
+    setSheetOpen(true);
+  }, []);
+
+  // Collect all users across loaded tabs for the assignment dropdown
+  const allUsers = companyData.users.length > 0 ? companyData.users : salesData.users;
 
   const fetchTabData = useCallback(
     (tab: CalendarTab, date: Date, mode: ViewMode) => {
@@ -136,35 +153,46 @@ export function CalendarView({ initialData, initialDate }: CalendarViewProps) {
           selectedDate={selectedDate}
           viewMode={viewMode}
           isPending={isPending}
+          onAppointmentClick={handleAppointmentClick}
         />
       )}
 
-      {activeTab === "sales" && salesData && (
+      {activeTab === "sales" && (
         <SalesGrid
           data={salesData}
           selectedDate={selectedDate}
           viewMode={viewMode}
           isPending={isPending}
+          onAppointmentClick={handleAppointmentClick}
         />
       )}
 
-      {activeTab === "production" && productionData && (
+      {activeTab === "production" && (
         <ProductionGrid
           data={productionData}
           selectedDate={selectedDate}
           viewMode={viewMode}
           isPending={isPending}
+          onAppointmentClick={handleAppointmentClick}
         />
       )}
 
-      {activeTab === "crews" && crewData && (
+      {activeTab === "crews" && (
         <ScheduleGrid
           data={crewData}
           selectedDate={selectedDate}
           viewMode={viewMode}
           isPending={isPending}
+          onAppointmentClick={handleAppointmentClick}
         />
       )}
+
+      <AppointmentSheet
+        appointment={editingAppointment}
+        users={allUsers}
+        open={sheetOpen}
+        onOpenChange={setSheetOpen}
+      />
     </div>
   );
 }

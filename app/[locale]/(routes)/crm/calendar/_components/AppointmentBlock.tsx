@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 import {
@@ -9,26 +8,21 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { TYPE_COLORS, TYPE_LABELS, STATUS_STYLES } from "./types";
+import { getTypeColors, TYPE_LABELS, STATUS_STYLES } from "./types";
 import type { CalendarAppointment } from "./types";
 
 interface AppointmentBlockProps {
   appointment: CalendarAppointment;
-  /** "day" renders as a positioned time block, "week" renders as a compact card */
   variant: "day" | "week";
-  /** For day mode: column start (hour offset from grid start) */
-  colStart?: number;
-  /** For day mode: column span (duration in hours) */
-  colSpan?: number;
+  onClick?: (appt: CalendarAppointment) => void;
 }
 
 export function AppointmentBlock({
   appointment,
   variant,
-  colStart,
-  colSpan,
+  onClick,
 }: AppointmentBlockProps) {
-  const colors = TYPE_COLORS[appointment.type ?? "OTHER"] ?? TYPE_COLORS.OTHER;
+  const colors = getTypeColors(appointment.type);
   const typeLabel = TYPE_LABELS[appointment.type ?? "OTHER"] ?? appointment.type ?? "Other";
   const startDate = new Date(appointment.start_date);
   const endDate = appointment.end_date ? new Date(appointment.end_date) : null;
@@ -45,18 +39,13 @@ export function AppointmentBlock({
   const content = (
     <div
       className={cn(
-        "rounded border-l-3 px-2 py-1 text-xs leading-tight cursor-default overflow-hidden",
+        "rounded border-l-[3px] px-2 py-1 text-xs leading-tight overflow-hidden cursor-pointer",
         colors.bg,
         colors.border,
-        "border-l-[3px]",
         variant === "day" && "h-full min-h-[28px] flex flex-col justify-center",
         variant === "week" && "mb-1"
       )}
-      style={
-        variant === "day" && colStart !== undefined && colSpan !== undefined
-          ? { gridColumnStart: colStart, gridColumnEnd: colStart + colSpan }
-          : undefined
-      }
+      onClick={() => onClick?.(appointment)}
     >
       <div className={cn("font-semibold truncate", colors.text)}>
         {appointment.title}
@@ -101,13 +90,7 @@ export function AppointmentBlock({
     <TooltipProvider delayDuration={200}>
       <Tooltip>
         <TooltipTrigger asChild>
-          {appointment.job ? (
-            <Link href={`/crm/opportunities/${appointment.job.id}`}>
-              {content}
-            </Link>
-          ) : (
-            content
-          )}
+          {content}
         </TooltipTrigger>
         <TooltipContent side="bottom" align="start">
           {tooltipContent}

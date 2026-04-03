@@ -18,6 +18,7 @@ export const updateAppointment = async (
     });
 
     revalidatePath("/[locale]/(routes)/crm/opportunities", "page");
+    revalidatePath("/[locale]/(routes)/crm/calendar", "page");
     return { data: appointment };
   } catch (error) {
     console.error("[UPDATE_APPOINTMENT]", error);
@@ -36,6 +37,7 @@ export const deleteAppointment = async (id: string) => {
     });
 
     revalidatePath("/[locale]/(routes)/crm/opportunities", "page");
+    revalidatePath("/[locale]/(routes)/crm/calendar", "page");
     return { data: true };
   } catch (error) {
     console.error("[DELETE_APPOINTMENT]", error);
