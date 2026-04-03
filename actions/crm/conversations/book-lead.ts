@@ -30,6 +30,7 @@ export const bookLead = async (data: {
     assignedTo: string; // PM user ID
     startDate: string;  // ISO date string
     startTime: string;  // HH:mm
+    timezone?: string;  // IANA timezone (default: America/Denver)
     notes?: string;
   };
 }) => {
@@ -116,7 +117,23 @@ export const bookLead = async (data: {
 
       // 5. Create job (opportunity) + appointment
       if (data.schedule) {
-        const startDateTime = new Date(`${data.schedule.startDate}T${data.schedule.startTime}`);
+        // Client sends timezone (e.g., "America/Denver"), date, and time separately.
+        // We construct the correct UTC timestamp using the timezone.
+        const tz = data.schedule.timezone || "America/Denver";
+        const naive = `${data.schedule.startDate}T${data.schedule.startTime}:00`;
+        // Use a formatter to find the UTC offset for this date in this timezone
+        const formatter = new Intl.DateTimeFormat("en-US", {
+          timeZone: tz,
+          year: "numeric", month: "2-digit", day: "2-digit",
+          hour: "2-digit", minute: "2-digit", second: "2-digit",
+          hour12: false, timeZoneName: "longOffset",
+        });
+        // Parse: get the offset from a reference date near our target
+        const refDate = new Date(naive + "Z");
+        const formatted = formatter.format(refDate);
+        const offsetMatch = formatted.match(/GMT([+-]\d{2}:\d{2})/);
+        const offset = offsetMatch ? offsetMatch[1] : "-06:00";
+        const startDateTime = new Date(`${naive}${offset}`);
         const endDateTime = new Date(startDateTime.getTime() + 60 * 60 * 1000); // 1 hour default
 
         job = await (tx as any).crm_Opportunities.create({

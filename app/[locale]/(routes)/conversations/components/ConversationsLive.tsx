@@ -444,6 +444,7 @@ function BookLeadSheet({
   const [schedDate, setSchedDate] = useState("");
   const [schedTime, setSchedTime] = useState("10:00");
   const [schedNotes, setSchedNotes] = useState("");
+  const [schedTz, setSchedTz] = useState("America/Denver");
   const [submitting, setSubmitting] = useState(false);
 
   // Load lead sources on mount
@@ -489,6 +490,7 @@ function BookLeadSheet({
         assignedTo,
         startDate: schedDate,
         startTime: schedTime,
+        timezone: schedTz,
         notes: schedNotes || undefined,
       } : undefined,
     });
@@ -501,7 +503,7 @@ function BookLeadSheet({
     // Reset
     setStep("info"); setFirstName(""); setLastName(""); setRequest("");
     setPropertyAddress(""); setPropertyCity(""); setPropertyState("CO"); setPropertyZip("");
-    setLeadSourceId(""); setAssignedTo(""); setSchedDate(""); setSchedTime("10:00"); setSchedNotes("");
+    setLeadSourceId(""); setAssignedTo(""); setSchedDate(""); setSchedTime("10:00"); setSchedNotes(""); setSchedTz("America/Denver");
     onOpenChange(false);
     onCreated();
   };
@@ -622,6 +624,16 @@ function BookLeadSheet({
                   <Label>Time</Label>
                   <Input type="time" value={schedTime} onChange={(e) => setSchedTime(e.target.value)} />
                 </div>
+              </div>
+              <div className="space-y-2">
+                <Label>Timezone</Label>
+                <Select value={schedTz} onValueChange={setSchedTz}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="America/Denver">Mountain (CO)</SelectItem>
+                    <SelectItem value="America/Chicago">Central (TX)</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
               <div className="space-y-2">
                 <Label>Notes</Label>
