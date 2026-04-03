@@ -82,7 +82,19 @@ export const bookLead = async (data: {
         });
       }
 
-      // 4. Create contact from lead data
+      // 4. Create account (customer)
+      const customerName = [data.firstName, data.lastName].filter(Boolean).join(" ");
+      const account = await (tx as any).crm_Accounts.create({
+        data: {
+          v: 0,
+          name: customerName,
+          createdBy: userId,
+          updatedBy: userId,
+          assigned_to: data.schedule?.assignedTo || userId,
+        },
+      });
+
+      // 5. Create contact from lead data, linked to account
       const contact = await (tx as any).crm_Contacts.create({
         data: {
           v: 0,
@@ -92,10 +104,11 @@ export const bookLead = async (data: {
           createdBy: userId,
           updatedBy: userId,
           assigned_to: data.schedule?.assignedTo || userId,
+          accountsIDs: account.id,
         },
       });
 
-      // Link conversation to contact too
+      // Link conversation to contact
       await (tx as any).crm_Conversations.update({
         where: { id: data.conversationId },
         data: { contactId: contact.id },
@@ -147,6 +160,7 @@ export const bookLead = async (data: {
             created_by: userId,
             createdBy: userId,
             updatedBy: userId,
+            account: account.id,
             contact: contact.id,
           },
         });
