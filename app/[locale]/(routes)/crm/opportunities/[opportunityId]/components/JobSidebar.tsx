@@ -662,10 +662,10 @@ function TeamCard({ job }: { job: Job }) {
   const [userOptions, setUserOptions] = useState<Array<{ value: string; label: string }>>([]);
 
   const handleEdit = async () => {
-    // Fetch active users for the PM dropdown
-    const { getActiveUsers } = await import("@/actions/get-users");
-    const users = await getActiveUsers();
-    setUserOptions(users.map((u: any) => ({ value: u.id, label: u.name || u.email })));
+    // Fetch active users for the PM dropdown via server action
+    const { getProjectManagers } = await import("@/actions/crm/conversations/book-lead");
+    const users = await getProjectManagers();
+    setUserOptions(users.map((u) => ({ value: u.id, label: u.name || "Unnamed" })));
     setEditing(true);
   };
 
