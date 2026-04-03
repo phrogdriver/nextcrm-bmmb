@@ -5,7 +5,7 @@ import Link from "next/link";
 import {
   Phone, PhoneOff, Plus, Search,
   PhoneIncoming, PhoneOutgoing, User, Briefcase,
-  Mic, MicOff,
+  Mic, MicOff, Play, Square,
 } from "lucide-react";
 import { formatDistanceToNow, format } from "date-fns";
 
@@ -152,10 +152,13 @@ const DISPOSITION_LABELS: Record<string, string> = {
 
 function CallPill({ activity, onDispositioned }: { activity: ActivityWithLinks & { disposition?: string | null }; onDispositioned: () => void }) {
   const [showDisposition, setShowDisposition] = useState(false);
+  const [playing, setPlaying] = useState(false);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
   const metadata = activity.metadata as { direction?: string; recordingUrl?: string } | null;
   const direction = metadata?.direction ?? "inbound";
   const isMissed = activity.outcome === "missed" || activity.outcome === "no-answer";
   const isVoicemail = activity.type === "voicemail";
+  const recordingUrl = metadata?.recordingUrl;
   const DirIcon = isMissed ? PhoneOff : (direction === "inbound" ? PhoneIncoming : PhoneOutgoing);
   const mins = activity.duration ? Math.floor(activity.duration / 60) : 0;
   const secs = activity.duration ? activity.duration % 60 : 0;
@@ -167,6 +170,22 @@ function CallPill({ activity, onDispositioned }: { activity: ActivityWithLinks &
     : activity.outcome === "busy" ? "busy"
     : activity.outcome === "voicemail" ? "voicemail"
     : activity.outcome ?? "";
+
+  const togglePlayback = () => {
+    if (!recordingUrl) return;
+    if (playing && audioRef.current) {
+      audioRef.current.pause();
+      audioRef.current.currentTime = 0;
+      setPlaying(false);
+    } else {
+      if (!audioRef.current) {
+        audioRef.current = new Audio(recordingUrl);
+        audioRef.current.onended = () => setPlaying(false);
+      }
+      audioRef.current.play();
+      setPlaying(true);
+    }
+  };
 
   return (
     <div className="my-3">
@@ -181,9 +200,26 @@ function CallPill({ activity, onDispositioned }: { activity: ActivityWithLinks &
           <span>{isVoicemail ? "Voicemail" : `${direction === "inbound" ? "Inbound" : "Outbound"} call`}</span>
           {outcomeLabel && !isVoicemail && <span>&middot; {outcomeLabel}</span>}
           {durationStr && <span>&middot; {durationStr}</span>}
+          {isVoicemail && recordingUrl && (
+            <button
+              onClick={togglePlayback}
+              className="ml-1 p-0.5 rounded-full hover:bg-amber-200 dark:hover:bg-amber-800 transition-colors"
+              title={playing ? "Stop" : "Play voicemail"}
+            >
+              {playing ? <Square className="h-3 w-3 fill-current" /> : <Play className="h-3 w-3 fill-current" />}
+            </button>
+          )}
           <span className="text-xs">{format(new Date(activity.date), "MMM d, h:mm a")}</span>
         </div>
       </div>
+      {/* Transcription */}
+      {isVoicemail && activity.description && (
+        <div className="flex justify-center mt-1">
+          <p className="text-xs text-muted-foreground italic max-w-md text-center">
+            &ldquo;{activity.description}&rdquo;
+          </p>
+        </div>
+      )}
       {/* Disposition badge or button */}
       <div className="flex justify-center mt-1">
         {activity.disposition ? (
