@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import Link from "next/link";
 import {
   Phone, PhoneOff, Plus, Search,
@@ -976,6 +976,12 @@ export function ConversationsLive({ initialConversations }: Props) {
     getAvailability().then(setAvailabilityState);
   }, []);
 
+  // Auto-scroll to bottom of timeline
+  const timelineEndRef = useRef<HTMLDivElement>(null);
+  const scrollToBottom = useCallback(() => {
+    timelineEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, []);
+
   const filteredConversations = conversations.filter(
     (c) => filter === "all" || c.status === filter
   );
@@ -1002,6 +1008,11 @@ export function ConversationsLive({ initialConversations }: Props) {
   useEffect(() => {
     if (selectedId) loadDetail(selectedId);
   }, [selectedId, loadDetail]);
+
+  // Auto-scroll when messages or activities change
+  useEffect(() => {
+    scrollToBottom();
+  }, [messages, activities, scrollToBottom]);
 
   // Subscribe to real-time updates when a conversation with a Twilio SID is selected
   useEffect(() => {
@@ -1041,15 +1052,23 @@ export function ConversationsLive({ initialConversations }: Props) {
     return unsubscribe;
   }, [onNewMessage, detail, refreshList]);
 
-  // Polling fallback: check for new messages every 5 seconds
+  // Polling fallback: check for new messages + activities every 5 seconds
   useEffect(() => {
     if (!selectedId) return;
     const interval = setInterval(async () => {
-      const { data: latest } = await getMessages(selectedId);
+      const [{ data: latestMsgs }, convResult] = await Promise.all([
+        getMessages(selectedId),
+        getConversationById(selectedId),
+      ]);
       setMessages((prev) => {
-        if (latest.length !== prev.length) return latest;
+        if (latestMsgs.length !== prev.length) return latestMsgs;
         return prev;
       });
+      setActivities((prev) => {
+        if (convResult.activities.length !== prev.length) return convResult.activities;
+        return prev;
+      });
+      if (convResult.conversation) setDetail(convResult.conversation);
     }, 5000);
     return () => clearInterval(interval);
   }, [selectedId]);
@@ -1252,7 +1271,7 @@ export function ConversationsLive({ initialConversations }: Props) {
                         timestamp: new Date(m.createdAt),
                       })),
                       ...activities
-                        .filter((a) => a.type === "call")
+                        .filter((a) => a.type === "call" || a.type === "voicemail")
                         .map((a) => ({
                           type: "call" as const,
                           data: a,
@@ -1276,6 +1295,7 @@ export function ConversationsLive({ initialConversations }: Props) {
                       )
                     );
                   })()}
+                  <div ref={timelineEndRef} />
                 </div>
               </ScrollArea>
 
