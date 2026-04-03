@@ -247,7 +247,7 @@ model crm_Opportunities {
   status           crm_Opportunity_Status? @default(ACTIVE)
 
   // Roofing: job identity
-  job_number        String?
+  job_number        String    @default(dbgenerated("CAST(nextval('job_number_seq') AS TEXT)"))
   property_id       String?                 @db.Uuid
   payor_type        crm_Payor_Type?
   pipeline          String?
