@@ -87,8 +87,7 @@ function getFieldsForStage(stageName: string): FieldDef[] {
 
     case "Scheduled":
       fields.push(
-        { key: "forecasted_build_date", label: "Build Date", type: "date", required: true },
-        { key: "superintendent_id", label: "Superintendent (User ID)", type: "text" }
+        { key: "forecasted_build_date", label: "Build Date", type: "date", required: true }
       );
       break;
 

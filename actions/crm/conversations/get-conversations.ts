@@ -31,13 +31,17 @@ export const getConversations = async (
 
     if (search) {
       const digits = search.replace(/\D/g, "");
-      where.OR = [
-        { phoneNumber: { contains: digits } },
+      const orClauses: Record<string, unknown>[] = [
         { contact: { last_name: { contains: search, mode: "insensitive" } } },
         { contact: { first_name: { contains: search, mode: "insensitive" } } },
         { lead: { lastName: { contains: search, mode: "insensitive" } } },
         { lead: { firstName: { contains: search, mode: "insensitive" } } },
       ];
+      // Only search by phone digits if there are any
+      if (digits.length >= 3) {
+        orClauses.unshift({ phoneNumber: { contains: digits } });
+      }
+      where.OR = orClauses;
     }
 
     if (cursor) {

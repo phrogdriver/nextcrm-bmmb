@@ -395,7 +395,7 @@ function CustomerPanel({
 
   return (
     <div className="p-4 space-y-4">
-      <Link href={entityUrl ?? "#"}>
+      <Link href={entityUrl ?? "#"} className="block">
         <Card className="hover:bg-muted/50 transition-colors cursor-pointer">
           <CardHeader className="pb-3">
             <div className="flex items-center justify-between">
@@ -430,8 +430,8 @@ function CustomerPanel({
                 <div className="flex items-center gap-2 text-sm hover:bg-muted/50 rounded p-1.5 -mx-1.5 transition-colors">
                   <Briefcase className="h-3.5 w-3.5 text-muted-foreground flex-shrink-0" />
                   <span className="font-medium truncate">{job.name || job.job_number}</span>
-                  {job.status && (
-                    <Badge variant="secondary" className="text-[10px] ml-auto flex-shrink-0">{job.status}</Badge>
+                  {job.assigned_sales_stage?.name && (
+                    <Badge variant="secondary" className="text-[10px] ml-auto flex-shrink-0">{job.assigned_sales_stage.name}</Badge>
                   )}
                 </div>
               </Link>
@@ -457,6 +457,7 @@ function BookLeadSheet({
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [request, setRequest] = useState("");
+  const [email, setEmail] = useState("");
   const [propertyAddress, setPropertyAddress] = useState("");
   const [propertyCity, setPropertyCity] = useState("");
   const [propertyState, setPropertyState] = useState("CO");
@@ -500,6 +501,7 @@ function BookLeadSheet({
 
   const handleNextStep = async () => {
     if (!lastName.trim()) { toast.error("Last name is required"); return; }
+    if (!email.trim()) { toast.error("Email is required"); return; }
     // Fetch all PMs (filter client-side by skills)
     const pmList = await getProjectManagers();
     setAllPms(pmList);
@@ -515,6 +517,7 @@ function BookLeadSheet({
 
   const handleBook = async (withSchedule: boolean) => {
     if (!lastName.trim()) { toast.error("Last name is required"); return; }
+    if (!email.trim()) { toast.error("Email is required"); return; }
     if (withSchedule && (!assignedTo || !schedDate)) {
       toast.error("Select a PM and date"); return;
     }
@@ -530,6 +533,7 @@ function BookLeadSheet({
       propertyZip: propertyZip || undefined,
       propertyLat: propertyLat ?? undefined,
       propertyLng: propertyLng ?? undefined,
+      email: email || undefined,
       leadSourceId: leadSourceId || undefined,
       conversationId,
       schedule: withSchedule ? {
@@ -547,7 +551,7 @@ function BookLeadSheet({
     }
     toast.success(withSchedule ? "Lead booked with inspection scheduled" : "Lead created");
     // Reset
-    setStep("info"); setFirstName(""); setLastName(""); setRequest("");
+    setStep("info"); setFirstName(""); setLastName(""); setEmail(""); setRequest("");
     setPropertyAddress(""); setPropertyCity(""); setPropertyState("CO"); setPropertyZip("");
     setLeadSourceId(""); setPropertyLat(null); setPropertyLng(null); setRequiredSkills([]);
     setAssignedTo(""); setSchedDate(""); setSchedTime("10:00"); setSchedNotes(""); setSchedTz("America/Denver");
@@ -583,6 +587,10 @@ function BookLeadSheet({
               <div className="space-y-2">
                 <Label>Phone</Label>
                 <Input defaultValue={phone ?? ""} disabled />
+              </div>
+              <div className="space-y-2">
+                <Label>Email <span className="text-destructive">*</span></Label>
+                <Input value={email} onChange={(e) => setEmail(e.target.value)} placeholder="email@example.com" type="email" />
               </div>
               <div className="space-y-2">
                 <Label>Property address</Label>
@@ -925,7 +933,7 @@ function NewConversationSheet({
 // ── Main Component ───────────────────────────────────────
 
 export function ConversationsLive({ initialConversations }: Props) {
-  const { dial, callState, onNewMessage, subscribeToConversation, isMessagingReady } = useTwilio();
+  const { dial, onNewMessage, subscribeToConversation, isMessagingReady } = useTwilio();
 
   const [conversations, setConversations] = useState(initialConversations);
   const [selectedId, setSelectedId] = useState<string | null>(initialConversations[0]?.id ?? null);
@@ -1153,8 +1161,8 @@ export function ConversationsLive({ initialConversations }: Props) {
         <div className="flex flex-col h-full overflow-hidden">
           {detail ? (
             <>
-              {/* Header */}
-              <div className="flex-shrink-0 p-4 border-b">
+              {/* Header — min-h matches left panel header */}
+              <div className="flex-shrink-0 p-4 border-b min-h-[140px] flex flex-col justify-center">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
                     <Avatar className="h-9 w-9">
@@ -1250,7 +1258,7 @@ export function ConversationsLive({ initialConversations }: Props) {
       {/* Customer panel */}
       <ResizablePanel defaultSize="25%" minSize="20%" maxSize="35%">
         <div className="flex flex-col h-full overflow-hidden">
-          <div className="flex-shrink-0 p-4 border-b">
+          <div className="flex-shrink-0 p-4 border-b min-h-[140px] flex items-end">
             <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Customer</h3>
           </div>
           <ScrollArea className="flex-1">

@@ -659,20 +659,27 @@ function DatesCard({ job, isAdmin }: { job: Job; isAdmin: boolean }) {
 
 function TeamCard({ job }: { job: Job }) {
   const [editing, setEditing] = useState(false);
+  const [userOptions, setUserOptions] = useState<Array<{ value: string; label: string }>>([]);
+
+  const handleEdit = async () => {
+    // Fetch active users for the PM dropdown
+    const { getActiveUsers } = await import("@/actions/get-users");
+    const users = await getActiveUsers();
+    setUserOptions(users.map((u: any) => ({ value: u.id, label: u.name || u.email })));
+    setEditing(true);
+  };
 
   const fields: FieldDef[] = [
-    { key: "assigned_to", label: "Project Manager (User ID)", type: "text" },
-    { key: "superintendent_id", label: "Superintendent (User ID)", type: "text" },
+    { key: "assigned_to", label: "Project Manager", type: "select", options: userOptions },
   ];
 
   const initialValues = {
     assigned_to: str(job.assigned_to),
-    superintendent_id: str(job.superintendent_id),
   };
 
   return (
     <>
-      <SidebarCard icon={Users} title="Assigned Team" onEdit={() => setEditing(true)}>
+      <SidebarCard icon={Users} title="Assigned Team" onEdit={handleEdit}>
         <div className="space-y-3">
           {job.assigned_to_user && (
             <div>
@@ -680,13 +687,7 @@ function TeamCard({ job }: { job: Job }) {
               <p className="text-sm font-medium">{job.assigned_to_user.name}</p>
             </div>
           )}
-          {job.superintendent && (
-            <div>
-              <p className="text-xs text-muted-foreground">Superintendent</p>
-              <p className="text-sm font-medium">{job.superintendent.name}</p>
-            </div>
-          )}
-          {!job.assigned_to_user && !job.superintendent && (
+          {!job.assigned_to_user && (
             <p className="text-sm text-muted-foreground">No team assigned</p>
           )}
         </div>

@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { Calendar, Users, CheckCircle2, Plus } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -134,11 +135,13 @@ export function AppointmentsCard({ jobId, appointments }: AppointmentsCardProps)
                 const startDate = new Date(appt.start_date);
                 const past = appt.status === "COMPLETED" || appt.status === "CANCELLED" || isPast(startDate);
 
+                const calendarDate = format(startDate, "yyyy-MM-dd");
                 return (
-                  <div
+                  <Link
                     key={appt.id}
+                    href={`/crm/calendar?date=${calendarDate}`}
                     className={cn(
-                      "flex items-start gap-3 py-3 border-b last:border-b-0",
+                      "flex items-start gap-3 py-3 border-b last:border-b-0 hover:bg-muted/50 rounded -mx-1 px-1 transition-colors cursor-pointer",
                       past && appt.status !== "IN_PROGRESS" && "opacity-50"
                     )}
                   >
@@ -195,7 +198,7 @@ export function AppointmentsCard({ jobId, appointments }: AppointmentsCardProps)
                         </div>
                       )}
                     </div>
-                  </div>
+                  </Link>
                 );
               })}
             </div>

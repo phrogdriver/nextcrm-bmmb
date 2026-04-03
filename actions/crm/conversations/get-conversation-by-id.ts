@@ -19,7 +19,7 @@ export type ConversationDetail = {
   contact: {
     id: string; first_name: string | null; last_name: string;
     office_phone: string | null; mobile_phone: string | null;
-    opportunities: Array<{ opportunity: { id: string; name: string | null; job_number: string; status: string | null } }>;
+    opportunities: Array<{ opportunity: { id: string; name: string | null; job_number: string; status: string | null; assigned_sales_stage: { name: string } | null } }>;
   } | null;
   lead: { id: string; firstName: string | null; lastName: string; phone: string | null } | null;
   created_by_user: { id: string; name: string | null; avatar: string | null } | null;
@@ -46,7 +46,10 @@ export const getConversationById = async (
             opportunities: {
               select: {
                 opportunity: {
-                  select: { id: true, name: true, job_number: true, status: true },
+                  select: {
+                    id: true, name: true, job_number: true, status: true,
+                    assigned_sales_stage: { select: { name: true } },
+                  },
                 },
               },
             },

@@ -17,6 +17,7 @@ export const bookLead = async (data: {
   firstName?: string;
   lastName: string;
   phone?: string;
+  email?: string;
   request?: string;
   propertyAddress?: string;
   propertyCity?: string;
@@ -51,6 +52,7 @@ export const bookLead = async (data: {
           firstName: data.firstName,
           lastName: data.lastName,
           phone: data.phone,
+          email: data.email,
           request: data.request,
           property_address: data.propertyAddress,
           property_city: data.propertyCity,
@@ -135,6 +137,7 @@ export const bookLead = async (data: {
           first_name: data.firstName,
           last_name: data.lastName,
           mobile_phone: data.phone,
+          email: data.email,
           createdBy: userId,
           updatedBy: userId,
           assigned_to: data.schedule?.assignedTo || userId,
