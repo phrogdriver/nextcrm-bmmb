@@ -179,7 +179,7 @@ function CallPill({ activity, onDispositioned }: { activity: ActivityWithLinks &
       setPlaying(false);
     } else {
       if (!audioRef.current) {
-        audioRef.current = new Audio(recordingUrl);
+        audioRef.current = new Audio(`/api/twilio/recording?url=${encodeURIComponent(recordingUrl)}`);
         audioRef.current.onended = () => setPlaying(false);
       }
       audioRef.current.play();
