@@ -46,6 +46,7 @@ import { createContact } from "@/actions/crm/contacts/create-contact";
 import { dispositionCall } from "@/actions/crm/conversations/disposition-call";
 import { linkActivitiesToEntity } from "@/actions/crm/conversations/link-activities-to-entity";
 import { bookLead, getProjectManagers } from "@/actions/crm/conversations/book-lead";
+import { getLeadSources } from "@/actions/crm/conversations/get-lead-sources";
 import { AddressAutocomplete } from "@/components/ui/address-autocomplete";
 import type { ParsedAddress } from "@/components/ui/address-autocomplete";
 
@@ -436,13 +437,21 @@ function BookLeadSheet({
   const [propertyZip, setPropertyZip] = useState("");
   const [leadSourceId, setLeadSourceId] = useState("");
 
-  // Schedule step
+  // Lead sources + Schedule step
+  const [leadSources, setLeadSources] = useState<Array<{ id: string; name: string }>>([]);
   const [pms, setPms] = useState<Array<{ id: string; name: string | null }>>([]);
   const [assignedTo, setAssignedTo] = useState("");
   const [schedDate, setSchedDate] = useState("");
   const [schedTime, setSchedTime] = useState("10:00");
   const [schedNotes, setSchedNotes] = useState("");
   const [submitting, setSubmitting] = useState(false);
+
+  // Load lead sources on mount
+  useEffect(() => {
+    if (open && leadSources.length === 0) {
+      getLeadSources().then(setLeadSources);
+    }
+  }, [open, leadSources.length]);
 
   const handleAddressSelect = (parsed: ParsedAddress) => {
     setPropertyAddress(parsed.address);
@@ -562,13 +571,9 @@ function BookLeadSheet({
                 <Select value={leadSourceId} onValueChange={setLeadSourceId}>
                   <SelectTrigger><SelectValue placeholder="Select source…" /></SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="google_ads">Google Ads</SelectItem>
-                    <SelectItem value="nextdoor">Nextdoor</SelectItem>
-                    <SelectItem value="yard_sign">Yard Sign</SelectItem>
-                    <SelectItem value="referral">Referral</SelectItem>
-                    <SelectItem value="website">Website</SelectItem>
-                    <SelectItem value="door_knock">Door Knock</SelectItem>
-                    <SelectItem value="repeat_customer">Repeat Customer</SelectItem>
+                    {leadSources.map((s) => (
+                      <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               </div>

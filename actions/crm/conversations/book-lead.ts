@@ -53,7 +53,8 @@ export const bookLead = async (data: {
           property_city: data.propertyCity,
           property_state: data.propertyState,
           property_zip: data.propertyZip,
-          lead_source_id: data.leadSourceId || undefined,
+          // Only pass lead_source_id if it looks like a valid UUID
+          lead_source_id: data.leadSourceId && data.leadSourceId.includes("-") ? data.leadSourceId : undefined,
           assigned_to: data.schedule?.assignedTo || userId,
         },
       });
