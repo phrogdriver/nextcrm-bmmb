@@ -40,6 +40,22 @@ export const getProperties = async (): Promise<PropertyListItem[]> => {
   }
 };
 
+export const linkPropertyToJob = async (
+  propertyId: string,
+  jobId: string
+): Promise<{ error?: string }> => {
+  try {
+    await (prismadb as any).crm_Opportunities.update({
+      where: { id: jobId },
+      data: { property_id: propertyId },
+    });
+    return {};
+  } catch (error) {
+    console.error("linkPropertyToJob error:", error);
+    return { error: "Failed to link property" };
+  }
+};
+
 export const searchProperties = async (
   query: string
 ): Promise<Array<{ id: string; address: string; city: string | null; state: string | null; zip: string | null }>> => {
