@@ -42,7 +42,10 @@ import { sendSms } from "@/actions/crm/conversations/send-sms";
 import { placeCall } from "@/actions/crm/conversations/place-call";
 import { searchCustomerByPhone, type CustomerMatch } from "@/actions/crm/conversations/search-customer-by-phone";
 import { createLead } from "@/actions/crm/leads/create-lead";
+import { createContact } from "@/actions/crm/contacts/create-contact";
 import { dispositionCall } from "@/actions/crm/conversations/disposition-call";
+import { AddressAutocomplete } from "@/components/ui/address-autocomplete";
+import type { ParsedAddress } from "@/components/ui/address-autocomplete";
 
 // ── Types ────────────────────────────────────────────────
 
@@ -416,7 +419,19 @@ function BookLeadSheet({
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [request, setRequest] = useState("");
+  const [propertyAddress, setPropertyAddress] = useState("");
+  const [propertyCity, setPropertyCity] = useState("");
+  const [propertyState, setPropertyState] = useState("CO");
+  const [propertyZip, setPropertyZip] = useState("");
+  const [leadSourceId, setLeadSourceId] = useState("");
   const [submitting, setSubmitting] = useState(false);
+
+  const handleAddressSelect = (parsed: ParsedAddress) => {
+    setPropertyAddress(parsed.address);
+    setPropertyCity(parsed.city);
+    setPropertyState(parsed.state);
+    setPropertyZip(parsed.zip);
+  };
 
   const handleSubmit = async () => {
     if (!lastName.trim()) { toast.error("Last name is required"); return; }
@@ -426,6 +441,11 @@ function BookLeadSheet({
       last_name: lastName,
       phone: phone || undefined,
       request: request || undefined,
+      property_address: propertyAddress || undefined,
+      property_city: propertyCity || undefined,
+      property_state: propertyState || undefined,
+      property_zip: propertyZip || undefined,
+      lead_source_id: leadSourceId || undefined,
     });
     if (result.error) {
       toast.error(result.error);
@@ -436,6 +456,8 @@ function BookLeadSheet({
       await updateConversation({ id: conversationId, leadId: result.data.id });
       toast.success("Lead created and linked");
       setFirstName(""); setLastName(""); setRequest("");
+      setPropertyAddress(""); setPropertyCity(""); setPropertyState("CO"); setPropertyZip("");
+      setLeadSourceId("");
       setSubmitting(false);
       onOpenChange(false);
       onCreated();
@@ -444,7 +466,7 @@ function BookLeadSheet({
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent className="overflow-y-auto">
+      <SheetContent className="overflow-y-auto sm:max-w-lg">
         <SheetHeader>
           <SheetTitle>Book Lead</SheetTitle>
           <SheetDescription>Create a new lead from this conversation</SheetDescription>
@@ -465,6 +487,28 @@ function BookLeadSheet({
             <Input defaultValue={phone ?? ""} disabled />
           </div>
           <div className="space-y-2">
+            <Label>Property address</Label>
+            <AddressAutocomplete
+              value={propertyAddress}
+              onChange={setPropertyAddress}
+              onSelect={handleAddressSelect}
+            />
+          </div>
+          <div className="grid grid-cols-3 gap-4">
+            <div className="space-y-2">
+              <Label>City</Label>
+              <Input value={propertyCity} onChange={(e) => setPropertyCity(e.target.value)} placeholder="City" />
+            </div>
+            <div className="space-y-2">
+              <Label>State</Label>
+              <Input value={propertyState} onChange={(e) => setPropertyState(e.target.value)} />
+            </div>
+            <div className="space-y-2">
+              <Label>Zip</Label>
+              <Input value={propertyZip} onChange={(e) => setPropertyZip(e.target.value)} placeholder="80903" />
+            </div>
+          </div>
+          <div className="space-y-2">
             <Label>What do they need?</Label>
             <Textarea
               placeholder="Roof leak, storm damage, gutters, etc."
@@ -472,6 +516,21 @@ function BookLeadSheet({
               onChange={(e) => setRequest(e.target.value)}
               rows={3}
             />
+          </div>
+          <div className="space-y-2">
+            <Label>Lead source</Label>
+            <Select value={leadSourceId} onValueChange={setLeadSourceId}>
+              <SelectTrigger><SelectValue placeholder="Select source…" /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="google_ads">Google Ads</SelectItem>
+                <SelectItem value="nextdoor">Nextdoor</SelectItem>
+                <SelectItem value="yard_sign">Yard Sign</SelectItem>
+                <SelectItem value="referral">Referral</SelectItem>
+                <SelectItem value="website">Website</SelectItem>
+                <SelectItem value="door_knock">Door Knock</SelectItem>
+                <SelectItem value="repeat_customer">Repeat Customer</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
           <Button onClick={handleSubmit} disabled={submitting} className="w-full">
             {submitting ? "Creating…" : "Create Lead"}
@@ -500,15 +559,12 @@ function AddContactSheet({
   const handleSubmit = async () => {
     if (!lastName.trim()) { toast.error("Last name is required"); return; }
     setSubmitting(true);
-    // Create contact via direct prisma call would be ideal, but we can use
-    // the lead creation as a workaround and update the conversation link.
-    // For now, create as a lead with a note that it's a contact.
-    // TODO: wire to actual createContact action when available
-    const result = await createLead({
+    const result = await createContact({
       first_name: firstName || undefined,
       last_name: lastName,
-      phone: phone || undefined,
-      description: contactType ? `Contact type: ${contactType}. ${notes}` : notes || undefined,
+      mobile_phone: phone || undefined,
+      email: email || undefined,
+      description: notes || undefined,
     });
     if (result.error) {
       toast.error(result.error);
@@ -516,8 +572,8 @@ function AddContactSheet({
       return;
     }
     if (result.data) {
-      await updateConversation({ id: conversationId, leadId: result.data.id });
-      toast.success("Contact added and linked");
+      await updateConversation({ id: conversationId, contactId: result.data.id });
+      toast.success("Contact created and linked");
       setFirstName(""); setLastName(""); setEmail(""); setContactType(""); setNotes("");
       setSubmitting(false);
       onOpenChange(false);
