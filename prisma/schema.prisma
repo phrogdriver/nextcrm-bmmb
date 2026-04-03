@@ -1161,6 +1161,7 @@ model Users {
   username         String?
   skills           String[]     @default([])  // e.g. ["asphalt", "tile", "metal"]
   takingLeads      Boolean      @default(true) // false = excluded from lead rotation/scheduling
+  twilioWorkerSid  String?      // Twilio TaskRouter Worker SID
   userStatus       ActiveStatus @default(PENDING)
   userLanguage     Language     @default(en)
 
