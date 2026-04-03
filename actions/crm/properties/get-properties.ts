@@ -64,6 +64,7 @@ export const createProperty = async (data: {
   lat?: number;
   lng?: number;
   property_type?: string;
+  companycam_id?: string;
   owner_id?: string;
   jobId?: string;
 }): Promise<{ data?: any; error?: string }> => {
@@ -77,6 +78,7 @@ export const createProperty = async (data: {
         lat: data.lat,
         lng: data.lng,
         property_type: data.property_type,
+        companycam_id: data.companycam_id,
         owner_id: data.owner_id,
       },
     });
