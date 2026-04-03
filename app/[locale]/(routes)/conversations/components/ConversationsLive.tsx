@@ -439,7 +439,8 @@ function BookLeadSheet({
 
   // Lead sources + Schedule step
   const [leadSources, setLeadSources] = useState<Array<{ id: string; name: string }>>([]);
-  const [pms, setPms] = useState<Array<{ id: string; name: string | null }>>([]);
+  const [allPms, setAllPms] = useState<Array<{ id: string; name: string | null; skills: string[] }>>([]);
+  const [requiredSkills, setRequiredSkills] = useState<string[]>([]);
   const [assignedTo, setAssignedTo] = useState("");
   const [schedDate, setSchedDate] = useState("");
   const [schedTime, setSchedTime] = useState("10:00");
@@ -466,12 +467,24 @@ function BookLeadSheet({
     setPropertyLng(parsed.lng);
   };
 
+  // Filtered PMs based on required skills
+  const filteredPms = requiredSkills.length > 0
+    ? allPms.filter((pm) => requiredSkills.every((s) => pm.skills.includes(s)))
+    : allPms;
+
   const handleNextStep = async () => {
     if (!lastName.trim()) { toast.error("Last name is required"); return; }
-    // Fetch PMs for the scheduler
+    // Fetch all PMs (filter client-side by skills)
     const pmList = await getProjectManagers();
-    setPms(pmList);
+    setAllPms(pmList);
     setStep("schedule");
+  };
+
+  const toggleSkill = (skill: string) => {
+    setRequiredSkills((prev) =>
+      prev.includes(skill) ? prev.filter((s) => s !== skill) : [...prev, skill]
+    );
+    setAssignedTo(""); // reset PM selection when skills change
   };
 
   const handleBook = async (withSchedule: boolean) => {
@@ -510,7 +523,7 @@ function BookLeadSheet({
     // Reset
     setStep("info"); setFirstName(""); setLastName(""); setRequest("");
     setPropertyAddress(""); setPropertyCity(""); setPropertyState("CO"); setPropertyZip("");
-    setLeadSourceId(""); setPropertyLat(null); setPropertyLng(null);
+    setLeadSourceId(""); setPropertyLat(null); setPropertyLng(null); setRequiredSkills([]);
     setAssignedTo(""); setSchedDate(""); setSchedTime("10:00"); setSchedNotes(""); setSchedTz("America/Denver");
     onOpenChange(false);
     onCreated();
@@ -587,6 +600,23 @@ function BookLeadSheet({
                   </SelectContent>
                 </Select>
               </div>
+              <div className="space-y-2">
+                <Label>Skills needed</Label>
+                <div className="flex flex-wrap gap-2">
+                  {["Asphalt", "Tile", "Metal", "TPO/Flat", "Windows", "Siding", "Paint"].map((skill) => (
+                    <Button
+                      key={skill}
+                      type="button"
+                      size="sm"
+                      variant={requiredSkills.includes(skill.toLowerCase()) ? "default" : "outline"}
+                      className="h-7 text-xs"
+                      onClick={() => toggleSkill(skill.toLowerCase())}
+                    >
+                      {skill}
+                    </Button>
+                  ))}
+                </div>
+              </div>
               <div className="flex gap-2">
                 <Button className="flex-1" onClick={handleNextStep}>
                   Next: Schedule Inspection
@@ -617,9 +647,19 @@ function BookLeadSheet({
                 <Select value={assignedTo} onValueChange={setAssignedTo}>
                   <SelectTrigger><SelectValue placeholder="Select PM…" /></SelectTrigger>
                   <SelectContent>
-                    {pms.map((pm) => (
-                      <SelectItem key={pm.id} value={pm.id}>{pm.name || "Unnamed"}</SelectItem>
+                    {filteredPms.map((pm) => (
+                      <SelectItem key={pm.id} value={pm.id}>
+                        {pm.name || "Unnamed"}
+                        {pm.skills.length > 0 && (
+                          <span className="text-muted-foreground ml-1">({pm.skills.join(", ")})</span>
+                        )}
+                      </SelectItem>
                     ))}
+                    {filteredPms.length === 0 && (
+                      <div className="p-2 text-xs text-muted-foreground text-center">
+                        No PMs match the selected skills
+                      </div>
+                    )}
                   </SelectContent>
                 </Select>
               </div>

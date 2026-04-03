@@ -1156,6 +1156,7 @@ model Users {
   phone            String?
   password         String?
   username         String?
+  skills           String[]     @default([])  // e.g. ["asphalt", "tile", "metal"]
   userStatus       ActiveStatus @default(PENDING)
   userLanguage     Language     @default(en)
 

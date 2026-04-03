@@ -283,14 +283,27 @@ export const bookLead = async (data: {
 /**
  * Get active users with PM role for the scheduling picker.
  */
-export const getProjectManagers = async (): Promise<Array<{ id: string; name: string | null }>> => {
+/**
+ * Get active users, optionally filtered by required skills.
+ * If skills are provided, only returns users who have ALL of them.
+ */
+export const getProjectManagers = async (
+  requiredSkills?: string[]
+): Promise<Array<{ id: string; name: string | null; skills: string[] }>> => {
   try {
     const session = await getServerSession(authOptions);
     if (!session) return [];
 
+    const where: any = { userStatus: "ACTIVE" };
+
+    // Filter by skills: user must have ALL required skills
+    if (requiredSkills && requiredSkills.length > 0) {
+      where.skills = { hasEvery: requiredSkills };
+    }
+
     const users = await prismadb.users.findMany({
-      where: { userStatus: "ACTIVE" },
-      select: { id: true, name: true },
+      where,
+      select: { id: true, name: true, skills: true },
       orderBy: { name: "asc" },
     });
 

@@ -1,0 +1,1 @@
+ALTER TABLE "Users" ADD COLUMN "skills" TEXT[] DEFAULT ARRAY[]::TEXT[];
