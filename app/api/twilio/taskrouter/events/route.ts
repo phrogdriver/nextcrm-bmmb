@@ -15,6 +15,8 @@ export async function POST(request: Request) {
   const eventType = body.EventType;
   console.log("[taskrouter/events]", eventType);
 
+  const wsSid = process.env.TWILIO_WORKSPACE_SID!;
+
   if (eventType === "workflow.timeout") {
     // Task timed out — no agent was available. Redirect caller to voicemail.
     const taskAttributes = JSON.parse(body.TaskAttributes || "{}");
@@ -30,6 +32,27 @@ export async function POST(request: Request) {
         console.log("[taskrouter/events] Redirected call to voicemail:", callSid);
       } catch (err) {
         console.error("[taskrouter/events] Failed to redirect to voicemail:", err);
+      }
+    }
+  }
+
+  // Auto-complete wrapping tasks so the worker's voice channel is freed up.
+  // When a call ends, the task moves to "wrapping". We complete it immediately
+  // so the agent can receive the next call.
+  if (eventType === "task.wrapup") {
+    const taskSid = body.TaskSid;
+    if (taskSid && wsSid) {
+      try {
+        await twilioClient.taskrouter.v1
+          .workspaces(wsSid)
+          .tasks(taskSid)
+          .update({
+            assignmentStatus: "completed",
+            reason: "Auto-completed after call ended",
+          });
+        console.log("[taskrouter/events] Auto-completed wrapping task:", taskSid);
+      } catch (err) {
+        console.error("[taskrouter/events] Failed to complete task:", err);
       }
     }
   }
