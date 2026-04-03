@@ -1161,8 +1161,8 @@ export function ConversationsLive({ initialConversations }: Props) {
         <div className="flex flex-col h-full overflow-hidden">
           {detail ? (
             <>
-              {/* Header — min-h matches left panel header */}
-              <div className="flex-shrink-0 p-4 border-b min-h-[140px] flex flex-col justify-center">
+              {/* Header */}
+              <div className="flex-shrink-0 p-4 border-b">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
                     <Avatar className="h-9 w-9">
@@ -1258,7 +1258,7 @@ export function ConversationsLive({ initialConversations }: Props) {
       {/* Customer panel */}
       <ResizablePanel defaultSize="25%" minSize="20%" maxSize="35%">
         <div className="flex flex-col h-full overflow-hidden">
-          <div className="flex-shrink-0 p-4 border-b min-h-[140px] flex items-end">
+          <div className="flex-shrink-0 p-4 border-b">
             <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Customer</h3>
           </div>
           <ScrollArea className="flex-1">
