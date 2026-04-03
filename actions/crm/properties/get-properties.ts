@@ -56,6 +56,70 @@ export const linkPropertyToJob = async (
   }
 };
 
+export const createProperty = async (data: {
+  address: string;
+  city?: string;
+  state?: string;
+  zip?: string;
+  lat?: number;
+  lng?: number;
+  property_type?: string;
+  owner_id?: string;
+  jobId?: string;
+}): Promise<{ data?: any; error?: string }> => {
+  try {
+    const property = await (prismadb as any).crm_Properties.create({
+      data: {
+        address: data.address,
+        city: data.city,
+        state: data.state,
+        zip: data.zip,
+        lat: data.lat,
+        lng: data.lng,
+        property_type: data.property_type,
+        owner_id: data.owner_id,
+      },
+    });
+
+    if (data.jobId) {
+      await (prismadb as any).crm_Opportunities.update({
+        where: { id: data.jobId },
+        data: { property_id: property.id },
+      });
+    }
+
+    return { data: property };
+  } catch (error) {
+    console.error("createProperty error:", error);
+    return { error: "Failed to create property" };
+  }
+};
+
+export const updateProperty = async (
+  propertyId: string,
+  data: {
+    address?: string;
+    city?: string;
+    state?: string;
+    zip?: string;
+    lat?: number;
+    lng?: number;
+    property_type?: string;
+    owner_id?: string;
+  }
+): Promise<{ error?: string }> => {
+  try {
+    await (prismadb as any).crm_Properties.update({
+      where: { id: propertyId },
+      data,
+    });
+    return {};
+  } catch (error) {
+    console.error("updateProperty error:", error);
+    return { error: "Failed to update property" };
+  }
+};
+
 export const searchProperties = async (
   query: string
 ): Promise<Array<{ id: string; address: string; city: string | null; state: string | null; zip: string | null }>> => {
