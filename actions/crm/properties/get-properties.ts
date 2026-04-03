@@ -39,3 +39,27 @@ export const getProperties = async (): Promise<PropertyListItem[]> => {
     return [];
   }
 };
+
+export const searchProperties = async (
+  query: string
+): Promise<Array<{ id: string; address: string; city: string | null; state: string | null; zip: string | null }>> => {
+  try {
+    const properties = await (prismadb as any).crm_Properties.findMany({
+      where: {
+        deletedAt: null,
+        OR: [
+          { address: { contains: query, mode: "insensitive" } },
+          { city: { contains: query, mode: "insensitive" } },
+          { zip: { contains: query } },
+        ],
+      },
+      select: { id: true, address: true, city: true, state: true, zip: true },
+      take: 10,
+      orderBy: { createdAt: "desc" },
+    });
+    return properties;
+  } catch (error) {
+    console.error("searchProperties error:", error);
+    return [];
+  }
+};

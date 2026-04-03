@@ -170,7 +170,12 @@ export const bookLead = async (data: {
       let job: any = null;
       let appointment: any = null;
 
-      // 5. Create job (opportunity) + appointment
+      // 5. Find default sales stage (first by order, or first alphabetically)
+      const defaultStage = await (tx as any).crm_Opportunities_Sales_Stages.findFirst({
+        orderBy: [{ order: "asc" }, { name: "asc" }],
+      });
+
+      // 6. Create job (opportunity) + appointment
       if (data.schedule) {
         // Client sends timezone (e.g., "America/Denver"), date, and time separately.
         // We construct the correct UTC timestamp using the timezone.
@@ -205,6 +210,7 @@ export const bookLead = async (data: {
             account: account.id,
             contact: contact.id,
             property_id: property?.id ?? undefined,
+            sales_stage: defaultStage?.id ?? undefined,
           },
         });
 

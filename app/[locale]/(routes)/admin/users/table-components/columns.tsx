@@ -6,6 +6,7 @@ import { ColumnDef } from "@tanstack/react-table";
 
 import { statuses } from "../table-data/data";
 import { AdminUser } from "../table-data/schema";
+import { Badge } from "@/components/ui/badge";
 import { DataTableRowActions } from "./data-table-row-actions";
 import { DataTableColumnHeader } from "./data-table-column-header";
 import { formatDistanceToNowStrict } from "date-fns";
@@ -120,6 +121,25 @@ export const columns: ColumnDef<AdminUser>[] = [
 
     cell: ({ row }) => <div className="">{row.getValue("userLanguage")}</div>,
     enableSorting: true,
+    enableHiding: true,
+  },
+  {
+    accessorKey: "skills",
+    header: ({ column }) => (
+      <DataTableColumnHeader column={column} title="Skills" />
+    ),
+    cell: ({ row }) => {
+      const skills = (row.original.skills ?? []) as string[];
+      if (skills.length === 0) return <span className="text-muted-foreground text-xs">None</span>;
+      return (
+        <div className="flex flex-wrap gap-1">
+          {skills.map((s) => (
+            <Badge key={s} variant="secondary" className="text-[10px] capitalize">{s}</Badge>
+          ))}
+        </div>
+      );
+    },
+    enableSorting: false,
     enableHiding: true,
   },
   {

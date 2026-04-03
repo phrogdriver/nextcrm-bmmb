@@ -17,12 +17,20 @@ import AlertModal from "@/components/modals/alert-modal";
 import { useState } from "react";
 import { toast } from "sonner";
 
-import { Copy, Edit, MoreHorizontal, Trash } from "lucide-react";
+import { Copy, Edit, MoreHorizontal, Trash, Wrench } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { Button as SheetButton } from "@/components/ui/button";
+import {
+  Sheet, SheetContent, SheetHeader, SheetTitle,
+} from "@/components/ui/sheet";
 import { deleteUser } from "@/actions/admin/users/delete-user";
 import { activateUser } from "@/actions/admin/users/activate-user";
 import { deactivateUser } from "@/actions/admin/users/deactivate-user";
 import { activateAdmin } from "@/actions/admin/users/activate-admin";
 import { deactivateAdmin } from "@/actions/admin/users/deactivate-admin";
+import { updateUserSkills } from "@/actions/admin/users/update-skills";
+
+const ALL_SKILLS = ["asphalt", "tile", "metal", "tpo/flat", "windows", "siding", "paint"];
 
 interface DataTableRowActionsProps<TData> {
   row: Row<TData>;
@@ -37,6 +45,28 @@ export function DataTableRowActions<TData>({
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [updateOpen, setUpdateOpen] = useState(false);
+  const [skillsOpen, setSkillsOpen] = useState(false);
+  const [userSkills, setUserSkills] = useState<string[]>((row.original as any).skills ?? []);
+  const [savingSkills, setSavingSkills] = useState(false);
+
+  const toggleSkill = (skill: string) => {
+    setUserSkills((prev) =>
+      prev.includes(skill) ? prev.filter((s) => s !== skill) : [...prev, skill]
+    );
+  };
+
+  const saveSkills = async () => {
+    setSavingSkills(true);
+    const result = await updateUserSkills(data.id, userSkills);
+    setSavingSkills(false);
+    if (result.error) {
+      toast.error(result.error);
+    } else {
+      toast.success("Skills updated");
+      router.refresh();
+      setSkillsOpen(false);
+    }
+  };
 
   const onCopy = (id: string) => {
     navigator.clipboard.writeText(id);
@@ -171,12 +201,41 @@ export function DataTableRowActions<TData>({
             <Edit className="mr-2 w-4 h-4" />
             Deactivate Admin rights
           </DropdownMenuItem>
+          <DropdownMenuItem onClick={() => { setUserSkills((row.original as any).skills ?? []); setSkillsOpen(true); }}>
+            <Wrench className="mr-2 w-4 h-4" />
+            Manage Skills
+          </DropdownMenuItem>
           <DropdownMenuItem onClick={() => setOpen(true)}>
             <Trash className="mr-2 w-4 h-4" />
             Delete
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
+      <Sheet open={skillsOpen} onOpenChange={setSkillsOpen}>
+        <SheetContent>
+          <SheetHeader>
+            <SheetTitle>Skills — {data.name}</SheetTitle>
+          </SheetHeader>
+          <div className="mt-4 space-y-4">
+            <div className="flex flex-wrap gap-2">
+              {ALL_SKILLS.map((skill) => (
+                <SheetButton
+                  key={skill}
+                  size="sm"
+                  variant={userSkills.includes(skill) ? "default" : "outline"}
+                  className="capitalize"
+                  onClick={() => toggleSkill(skill)}
+                >
+                  {skill}
+                </SheetButton>
+              ))}
+            </div>
+            <SheetButton onClick={saveSkills} disabled={savingSkills} className="w-full">
+              {savingSkills ? "Saving…" : "Save Skills"}
+            </SheetButton>
+          </div>
+        </SheetContent>
+      </Sheet>
     </>
   );
 }
