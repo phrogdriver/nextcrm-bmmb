@@ -14,6 +14,8 @@ export type ConversationDetail = {
   createdAt: Date;
   contactId: string | null;
   leadId: string | null;
+  trackingNumberId: string | null;
+  trackingNumber: { id: string; phoneNumber: string; friendlyName: string; source: string; leadSourceId: string | null } | null;
   contact: { id: string; first_name: string | null; last_name: string; office_phone: string | null; mobile_phone: string | null } | null;
   lead: { id: string; firstName: string | null; lastName: string; phone: string | null } | null;
   created_by_user: { id: string; name: string | null; avatar: string | null } | null;
@@ -41,6 +43,9 @@ export const getConversationById = async (
           select: { id: true, firstName: true, lastName: true, phone: true },
         },
         created_by_user: { select: { id: true, name: true, avatar: true } },
+        trackingNumber: {
+          select: { id: true, phoneNumber: true, friendlyName: true, source: true, leadSourceId: true },
+        },
       },
     });
 

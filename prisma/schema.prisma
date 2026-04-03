@@ -518,7 +518,8 @@ model crm_Lead_Sources {
   id    String      @id @default(uuid()) @db.Uuid
   v     Int         @default(0) @map("__v")
   name  String      @unique
-  leads crm_Leads[] @relation("lead_source_relation")
+  leads            crm_Leads[]            @relation("lead_source_relation")
+  trackingNumbers  crm_Tracking_Numbers[]
 
   @@index([name])
 }
@@ -804,10 +805,12 @@ model crm_Tracking_Numbers {
   friendlyName  String              // "Google Ads — Roof Repair"
   source        String              // marketing channel
   campaign      String?             // specific campaign
+  leadSourceId  String?   @db.Uuid  // auto-tag leads from this number
   isActive      Boolean   @default(true)
   createdAt     DateTime  @default(now())
   updatedAt     DateTime? @updatedAt
 
+  leadSource    crm_Lead_Sources? @relation(fields: [leadSourceId], references: [id])
   conversations crm_Conversations[] @relation("conversation_tracking")
 
   @@index([phoneNumber])

@@ -372,6 +372,8 @@ function CustomerPanel({
           onOpenChange={setBookLeadOpen}
           phone={conversation.phoneNumber}
           conversationId={conversation.id}
+          defaultLeadSourceId={conversation.trackingNumber?.leadSourceId ?? undefined}
+          trackingSource={conversation.trackingNumber?.source}
           onCreated={onLinked}
         />
         <AddContactSheet
@@ -422,10 +424,12 @@ function CustomerPanel({
 // ── Book Lead Sheet ──────────────────────────────────────
 
 function BookLeadSheet({
-  open, onOpenChange, phone, conversationId, onCreated,
+  open, onOpenChange, phone, conversationId, defaultLeadSourceId, trackingSource, onCreated,
 }: {
   open: boolean; onOpenChange: (v: boolean) => void;
-  phone: string | null; conversationId: string; onCreated: () => void;
+  phone: string | null; conversationId: string;
+  defaultLeadSourceId?: string; trackingSource?: string;
+  onCreated: () => void;
 }) {
   const [step, setStep] = useState<"info" | "schedule">("info");
   const [firstName, setFirstName] = useState("");
@@ -435,7 +439,7 @@ function BookLeadSheet({
   const [propertyCity, setPropertyCity] = useState("");
   const [propertyState, setPropertyState] = useState("CO");
   const [propertyZip, setPropertyZip] = useState("");
-  const [leadSourceId, setLeadSourceId] = useState("");
+  const [leadSourceId, setLeadSourceId] = useState(defaultLeadSourceId ?? "");
 
   // Lead sources + Schedule step
   const [leadSources, setLeadSources] = useState<Array<{ id: string; name: string }>>([]);
@@ -599,6 +603,11 @@ function BookLeadSheet({
                     ))}
                   </SelectContent>
                 </Select>
+                {trackingSource && defaultLeadSourceId && (
+                  <p className="text-xs text-muted-foreground">
+                    Auto-detected from tracking number: {trackingSource}
+                  </p>
+                )}
               </div>
               <div className="space-y-2">
                 <Label>Skills needed</Label>
