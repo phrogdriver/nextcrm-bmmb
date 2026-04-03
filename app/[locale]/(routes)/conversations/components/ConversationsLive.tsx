@@ -196,41 +196,67 @@ function DispositionPopover({
 }: {
   activityId: string; onClose: () => void; onDone: () => void;
 }) {
+  const [selected, setSelected] = useState<string | null>(null);
+  const [note, setNote] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
-  const handleDisposition = async (disposition: string) => {
+  const handleSubmit = async () => {
+    if (!selected) return;
     setSubmitting(true);
     const result = await dispositionCall({
       activityId,
-      disposition: disposition as any,
+      disposition: selected as any,
+      note: note || undefined,
     });
     setSubmitting(false);
     if (result.error) {
       toast.error(result.error);
     } else {
-      toast.success(`Call dispositioned as ${DISPOSITION_LABELS[disposition]}`);
+      toast.success(`Call dispositioned as ${DISPOSITION_LABELS[selected]}`);
       onDone();
     }
   };
 
   return (
     <div className="flex justify-center mt-2">
-      <div className="bg-background border rounded-lg shadow-lg p-2 flex flex-wrap gap-1 max-w-sm">
-        {Object.entries(DISPOSITION_LABELS).map(([key, label]) => (
-          <Button
-            key={key}
-            variant="ghost"
-            size="sm"
-            className="h-7 text-xs"
-            disabled={submitting}
-            onClick={() => handleDisposition(key)}
-          >
-            {label}
+      <div className="bg-background border rounded-lg shadow-lg p-3 w-72 space-y-2">
+        <div className="flex flex-wrap gap-1">
+          {Object.entries(DISPOSITION_LABELS).map(([key, label]) => (
+            <Button
+              key={key}
+              variant={selected === key ? "default" : "outline"}
+              size="sm"
+              className="h-7 text-xs"
+              onClick={() => setSelected(key)}
+            >
+              {label}
+            </Button>
+          ))}
+        </div>
+        {selected && (
+          <>
+            <Textarea
+              placeholder="Notes (optional)"
+              value={note}
+              onChange={(e) => setNote(e.target.value)}
+              rows={2}
+              className="text-xs"
+            />
+            <div className="flex gap-2">
+              <Button size="sm" className="flex-1 h-7 text-xs" disabled={submitting} onClick={handleSubmit}>
+                {submitting ? "Saving…" : "Save"}
+              </Button>
+              <Button variant="ghost" size="sm" className="h-7 text-xs text-muted-foreground" onClick={onClose}>
+                Cancel
+              </Button>
+            </div>
+          </>
+        )}
+        {!selected && (
+          <Button variant="ghost" size="sm" className="h-7 text-xs text-muted-foreground w-full" onClick={onClose}>
+            Cancel
           </Button>
-        ))}
-        <Button variant="ghost" size="sm" className="h-7 text-xs text-muted-foreground" onClick={onClose}>
-          Cancel
-        </Button>
+        )}
       </div>
     </div>
   );
