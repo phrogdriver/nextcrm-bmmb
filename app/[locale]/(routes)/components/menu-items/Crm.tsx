@@ -36,6 +36,10 @@ export const getCrmMenuItem = ({ localizations }: Props): NavItem => {
         url: "/crm/dashboard/user",
       },
       {
+        title: "Calendar",
+        url: "/crm/calendar",
+      },
+      {
         title: "Overview",
         url: "/crm",
       },

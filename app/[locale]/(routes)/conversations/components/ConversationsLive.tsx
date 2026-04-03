@@ -44,6 +44,7 @@ import { searchCustomerByPhone, type CustomerMatch } from "@/actions/crm/convers
 import { createLead } from "@/actions/crm/leads/create-lead";
 import { createContact } from "@/actions/crm/contacts/create-contact";
 import { dispositionCall } from "@/actions/crm/conversations/disposition-call";
+import { linkActivitiesToEntity } from "@/actions/crm/conversations/link-activities-to-entity";
 import { AddressAutocomplete } from "@/components/ui/address-autocomplete";
 import type { ParsedAddress } from "@/components/ui/address-autocomplete";
 
@@ -454,6 +455,7 @@ function BookLeadSheet({
     }
     if (result.data) {
       await updateConversation({ id: conversationId, leadId: result.data.id });
+      await linkActivitiesToEntity({ conversationId, entityType: "lead", entityId: result.data.id });
       toast.success("Lead created and linked");
       setFirstName(""); setLastName(""); setRequest("");
       setPropertyAddress(""); setPropertyCity(""); setPropertyState("CO"); setPropertyZip("");
@@ -573,6 +575,7 @@ function AddContactSheet({
     }
     if (result.data) {
       await updateConversation({ id: conversationId, contactId: result.data.id });
+      await linkActivitiesToEntity({ conversationId, entityType: "contact", entityId: result.data.id });
       toast.success("Contact created and linked");
       setFirstName(""); setLastName(""); setEmail(""); setContactType(""); setNotes("");
       setSubmitting(false);
@@ -920,7 +923,7 @@ export function ConversationsLive({ initialConversations }: Props) {
                   className="flex-1 capitalize text-xs h-8"
                 >
                   {f}
-                  {f === "open" && (
+                  {f === "open" && conversations.filter((c) => c.status === "open").length > 0 && (
                     <span className="ml-1.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-destructive text-destructive-foreground text-[10px] px-1">
                       {conversations.filter((c) => c.status === "open").length}
                     </span>
