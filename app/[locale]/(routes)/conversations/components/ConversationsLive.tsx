@@ -41,10 +41,10 @@ import { updateConversation } from "@/actions/crm/conversations/update-conversat
 import { sendSms } from "@/actions/crm/conversations/send-sms";
 import { placeCall } from "@/actions/crm/conversations/place-call";
 import { searchCustomerByPhone, type CustomerMatch } from "@/actions/crm/conversations/search-customer-by-phone";
-import { createLead } from "@/actions/crm/leads/create-lead";
 import { createContact } from "@/actions/crm/contacts/create-contact";
 import { dispositionCall } from "@/actions/crm/conversations/disposition-call";
 import { linkActivitiesToEntity } from "@/actions/crm/conversations/link-activities-to-entity";
+import { bookLead, getProjectManagers } from "@/actions/crm/conversations/book-lead";
 import { AddressAutocomplete } from "@/components/ui/address-autocomplete";
 import type { ParsedAddress } from "@/components/ui/address-autocomplete";
 
@@ -417,6 +417,7 @@ function BookLeadSheet({
   open: boolean; onOpenChange: (v: boolean) => void;
   phone: string | null; conversationId: string; onCreated: () => void;
 }) {
+  const [step, setStep] = useState<"info" | "schedule">("info");
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [request, setRequest] = useState("");
@@ -425,6 +426,13 @@ function BookLeadSheet({
   const [propertyState, setPropertyState] = useState("CO");
   const [propertyZip, setPropertyZip] = useState("");
   const [leadSourceId, setLeadSourceId] = useState("");
+
+  // Schedule step
+  const [pms, setPms] = useState<Array<{ id: string; name: string | null }>>([]);
+  const [assignedTo, setAssignedTo] = useState("");
+  const [schedDate, setSchedDate] = useState("");
+  const [schedTime, setSchedTime] = useState("10:00");
+  const [schedNotes, setSchedNotes] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
   const handleAddressSelect = (parsed: ParsedAddress) => {
@@ -434,110 +442,193 @@ function BookLeadSheet({
     setPropertyZip(parsed.zip);
   };
 
-  const handleSubmit = async () => {
+  const handleNextStep = async () => {
     if (!lastName.trim()) { toast.error("Last name is required"); return; }
+    // Fetch PMs for the scheduler
+    const pmList = await getProjectManagers();
+    setPms(pmList);
+    setStep("schedule");
+  };
+
+  const handleBook = async (withSchedule: boolean) => {
+    if (!lastName.trim()) { toast.error("Last name is required"); return; }
+    if (withSchedule && (!assignedTo || !schedDate)) {
+      toast.error("Select a PM and date"); return;
+    }
     setSubmitting(true);
-    const result = await createLead({
-      first_name: firstName || undefined,
-      last_name: lastName,
+    const result = await bookLead({
+      firstName: firstName || undefined,
+      lastName,
       phone: phone || undefined,
       request: request || undefined,
-      property_address: propertyAddress || undefined,
-      property_city: propertyCity || undefined,
-      property_state: propertyState || undefined,
-      property_zip: propertyZip || undefined,
-      lead_source_id: leadSourceId || undefined,
+      propertyAddress: propertyAddress || undefined,
+      propertyCity: propertyCity || undefined,
+      propertyState: propertyState || undefined,
+      propertyZip: propertyZip || undefined,
+      leadSourceId: leadSourceId || undefined,
+      conversationId,
+      schedule: withSchedule ? {
+        assignedTo,
+        startDate: schedDate,
+        startTime: schedTime,
+        notes: schedNotes || undefined,
+      } : undefined,
     });
+    setSubmitting(false);
     if (result.error) {
       toast.error(result.error);
-      setSubmitting(false);
       return;
     }
-    if (result.data) {
-      await updateConversation({ id: conversationId, leadId: result.data.id });
-      await linkActivitiesToEntity({ conversationId, entityType: "lead", entityId: result.data.id });
-      toast.success("Lead created and linked");
-      setFirstName(""); setLastName(""); setRequest("");
-      setPropertyAddress(""); setPropertyCity(""); setPropertyState("CO"); setPropertyZip("");
-      setLeadSourceId("");
-      setSubmitting(false);
-      onOpenChange(false);
-      onCreated();
-    }
+    toast.success(withSchedule ? "Lead booked with inspection scheduled" : "Lead created");
+    // Reset
+    setStep("info"); setFirstName(""); setLastName(""); setRequest("");
+    setPropertyAddress(""); setPropertyCity(""); setPropertyState("CO"); setPropertyZip("");
+    setLeadSourceId(""); setAssignedTo(""); setSchedDate(""); setSchedTime("10:00"); setSchedNotes("");
+    onOpenChange(false);
+    onCreated();
+  };
+
+  const handleClose = (v: boolean) => {
+    if (!v) { setStep("info"); }
+    onOpenChange(v);
   };
 
   return (
-    <Sheet open={open} onOpenChange={onOpenChange}>
+    <Sheet open={open} onOpenChange={handleClose}>
       <SheetContent className="overflow-y-auto sm:max-w-lg">
-        <SheetHeader>
-          <SheetTitle>Book Lead</SheetTitle>
-          <SheetDescription>Create a new lead from this conversation</SheetDescription>
-        </SheetHeader>
-        <div className="space-y-4 mt-4">
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label>First name</Label>
-              <Input value={firstName} onChange={(e) => setFirstName(e.target.value)} />
+        {step === "info" ? (
+          <>
+            <SheetHeader>
+              <SheetTitle>Book Lead</SheetTitle>
+              <SheetDescription>Create a lead, contact, and schedule inspection</SheetDescription>
+            </SheetHeader>
+            <div className="space-y-4 mt-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>First name</Label>
+                  <Input value={firstName} onChange={(e) => setFirstName(e.target.value)} />
+                </div>
+                <div className="space-y-2">
+                  <Label>Last name</Label>
+                  <Input value={lastName} onChange={(e) => setLastName(e.target.value)} />
+                </div>
+              </div>
+              <div className="space-y-2">
+                <Label>Phone</Label>
+                <Input defaultValue={phone ?? ""} disabled />
+              </div>
+              <div className="space-y-2">
+                <Label>Property address</Label>
+                <AddressAutocomplete
+                  value={propertyAddress}
+                  onChange={setPropertyAddress}
+                  onSelect={handleAddressSelect}
+                />
+              </div>
+              <div className="grid grid-cols-3 gap-4">
+                <div className="space-y-2">
+                  <Label>City</Label>
+                  <Input value={propertyCity} onChange={(e) => setPropertyCity(e.target.value)} placeholder="City" />
+                </div>
+                <div className="space-y-2">
+                  <Label>State</Label>
+                  <Input value={propertyState} onChange={(e) => setPropertyState(e.target.value)} />
+                </div>
+                <div className="space-y-2">
+                  <Label>Zip</Label>
+                  <Input value={propertyZip} onChange={(e) => setPropertyZip(e.target.value)} placeholder="80903" />
+                </div>
+              </div>
+              <div className="space-y-2">
+                <Label>What do they need?</Label>
+                <Textarea
+                  placeholder="Roof leak, storm damage, gutters, etc."
+                  value={request}
+                  onChange={(e) => setRequest(e.target.value)}
+                  rows={3}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Lead source</Label>
+                <Select value={leadSourceId} onValueChange={setLeadSourceId}>
+                  <SelectTrigger><SelectValue placeholder="Select source…" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="google_ads">Google Ads</SelectItem>
+                    <SelectItem value="nextdoor">Nextdoor</SelectItem>
+                    <SelectItem value="yard_sign">Yard Sign</SelectItem>
+                    <SelectItem value="referral">Referral</SelectItem>
+                    <SelectItem value="website">Website</SelectItem>
+                    <SelectItem value="door_knock">Door Knock</SelectItem>
+                    <SelectItem value="repeat_customer">Repeat Customer</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="flex gap-2">
+                <Button className="flex-1" onClick={handleNextStep}>
+                  Next: Schedule Inspection
+                </Button>
+                <Button variant="outline" onClick={() => handleBook(false)} disabled={submitting}>
+                  {submitting ? "Saving…" : "Save Without Scheduling"}
+                </Button>
+              </div>
             </div>
-            <div className="space-y-2">
-              <Label>Last name</Label>
-              <Input value={lastName} onChange={(e) => setLastName(e.target.value)} />
+          </>
+        ) : (
+          <>
+            <SheetHeader>
+              <SheetTitle>Schedule Inspection</SheetTitle>
+              <SheetDescription>Assign a PM and pick a date/time</SheetDescription>
+            </SheetHeader>
+            <div className="space-y-4 mt-4">
+              {propertyAddress && (
+                <Card>
+                  <CardContent className="pt-4 text-sm">
+                    <p className="font-medium">{propertyAddress}</p>
+                    <p className="text-muted-foreground">{[propertyCity, propertyState, propertyZip].filter(Boolean).join(", ")}</p>
+                  </CardContent>
+                </Card>
+              )}
+              <div className="space-y-2">
+                <Label>Project Manager</Label>
+                <Select value={assignedTo} onValueChange={setAssignedTo}>
+                  <SelectTrigger><SelectValue placeholder="Select PM…" /></SelectTrigger>
+                  <SelectContent>
+                    {pms.map((pm) => (
+                      <SelectItem key={pm.id} value={pm.id}>{pm.name || "Unnamed"}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>Date</Label>
+                  <Input type="date" value={schedDate} onChange={(e) => setSchedDate(e.target.value)} />
+                </div>
+                <div className="space-y-2">
+                  <Label>Time</Label>
+                  <Input type="time" value={schedTime} onChange={(e) => setSchedTime(e.target.value)} />
+                </div>
+              </div>
+              <div className="space-y-2">
+                <Label>Notes</Label>
+                <Textarea
+                  placeholder="Any special instructions for the PM"
+                  value={schedNotes}
+                  onChange={(e) => setSchedNotes(e.target.value)}
+                  rows={2}
+                />
+              </div>
+              <div className="flex gap-2">
+                <Button variant="outline" className="flex-1" onClick={() => setStep("info")}>
+                  Back
+                </Button>
+                <Button className="flex-1" onClick={() => handleBook(true)} disabled={submitting}>
+                  {submitting ? "Booking…" : "Book Inspection"}
+                </Button>
+              </div>
             </div>
-          </div>
-          <div className="space-y-2">
-            <Label>Phone</Label>
-            <Input defaultValue={phone ?? ""} disabled />
-          </div>
-          <div className="space-y-2">
-            <Label>Property address</Label>
-            <AddressAutocomplete
-              value={propertyAddress}
-              onChange={setPropertyAddress}
-              onSelect={handleAddressSelect}
-            />
-          </div>
-          <div className="grid grid-cols-3 gap-4">
-            <div className="space-y-2">
-              <Label>City</Label>
-              <Input value={propertyCity} onChange={(e) => setPropertyCity(e.target.value)} placeholder="City" />
-            </div>
-            <div className="space-y-2">
-              <Label>State</Label>
-              <Input value={propertyState} onChange={(e) => setPropertyState(e.target.value)} />
-            </div>
-            <div className="space-y-2">
-              <Label>Zip</Label>
-              <Input value={propertyZip} onChange={(e) => setPropertyZip(e.target.value)} placeholder="80903" />
-            </div>
-          </div>
-          <div className="space-y-2">
-            <Label>What do they need?</Label>
-            <Textarea
-              placeholder="Roof leak, storm damage, gutters, etc."
-              value={request}
-              onChange={(e) => setRequest(e.target.value)}
-              rows={3}
-            />
-          </div>
-          <div className="space-y-2">
-            <Label>Lead source</Label>
-            <Select value={leadSourceId} onValueChange={setLeadSourceId}>
-              <SelectTrigger><SelectValue placeholder="Select source…" /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="google_ads">Google Ads</SelectItem>
-                <SelectItem value="nextdoor">Nextdoor</SelectItem>
-                <SelectItem value="yard_sign">Yard Sign</SelectItem>
-                <SelectItem value="referral">Referral</SelectItem>
-                <SelectItem value="website">Website</SelectItem>
-                <SelectItem value="door_knock">Door Knock</SelectItem>
-                <SelectItem value="repeat_customer">Repeat Customer</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-          <Button onClick={handleSubmit} disabled={submitting} className="w-full">
-            {submitting ? "Creating…" : "Create Lead"}
-          </Button>
-        </div>
+          </>
+        )}
       </SheetContent>
     </Sheet>
   );
