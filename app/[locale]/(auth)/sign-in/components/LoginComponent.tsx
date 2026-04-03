@@ -126,7 +126,7 @@ export function LoginComponent() {
                     <FormControl>
                       <Input
                         disabled={isLoading}
-                        placeholder="John Doe"
+                        placeholder="user@email.com"
                         {...field}
                       />
                     </FormControl>

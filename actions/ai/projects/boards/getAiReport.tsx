@@ -50,8 +50,8 @@ export async function getAiReport(session: any, boardId: string) {
       prompt = prompt + `Response must be in English language and MDX format.`;
 
       break;
-    case "cz":
-      prompt = prompt + `Odpověď musí být v českém jazyce a ve formátu MDX.`;
+    case "es":
+      prompt = prompt + `La respuesta debe estar en español y en formato MDX.`;
       break;
   }
 

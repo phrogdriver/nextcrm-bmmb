@@ -26,11 +26,11 @@ export const inviteUser = async (data: {
 
   const name = `${firstName} ${lastName}`;
 
-  let resend;
+  let resend: any = null;
   try {
     resend = await resendHelper();
-  } catch (error: any) {
-    return { error: error?.message || "Resend API key is not configured" };
+  } catch {
+    // Resend not configured — user will still be created, just no email sent
   }
 
   let message = "";
@@ -38,8 +38,8 @@ export const inviteUser = async (data: {
     case "en":
       message = `You have been invited to ${process.env.NEXT_PUBLIC_APP_NAME} \n\n Your username is: ${email} \n\n Your password is: [generated] \n\n Please login to ${process.env.NEXT_PUBLIC_APP_URL} \n\n Thank you \n\n ${process.env.NEXT_PUBLIC_APP_NAME}`;
       break;
-    case "cz":
-      message = `Byl jste pozván do ${process.env.NEXT_PUBLIC_APP_NAME} \n\n Vaše uživatelské jméno je: ${email} \n\n Prosím přihlašte se na ${process.env.NEXT_PUBLIC_APP_URL} \n\n Děkujeme \n\n ${process.env.NEXT_PUBLIC_APP_NAME}`;
+    case "es":
+      message = `Ha sido invitado a ${process.env.NEXT_PUBLIC_APP_NAME} \n\n Su nombre de usuario es: ${email} \n\n Por favor inicie sesión en ${process.env.NEXT_PUBLIC_APP_URL} \n\n Gracias \n\n ${process.env.NEXT_PUBLIC_APP_NAME}`;
       break;
     default:
       message = `You have been invited to ${process.env.NEXT_PUBLIC_APP_NAME} \n\n Your username is: ${email} \n\n Please login to ${process.env.NEXT_PUBLIC_APP_URL} \n\n Thank you \n\n ${process.env.NEXT_PUBLIC_APP_NAME}`;
@@ -91,22 +91,28 @@ export const inviteUser = async (data: {
       return { error: "User not created" };
     }
 
-    await resend.emails.send({
-      from:
-        process.env.NEXT_PUBLIC_APP_NAME +
-        " <" +
-        process.env.EMAIL_FROM +
-        ">",
-      to: user.email,
-      subject: `You have been invited to ${process.env.NEXT_PUBLIC_APP_NAME}`,
-      text: message,
-      react: InviteUserEmail({
-        invitedByUsername: session.user?.name! || "admin",
-        username: user?.name!,
-        invitedUserPassword: password,
-        userLanguage: language,
-      }),
-    });
+    if (resend) {
+      try {
+        await resend.emails.send({
+          from:
+            process.env.NEXT_PUBLIC_APP_NAME +
+            " <" +
+            process.env.EMAIL_FROM +
+            ">",
+          to: user.email,
+          subject: `You have been invited to ${process.env.NEXT_PUBLIC_APP_NAME}`,
+          text: message,
+          react: InviteUserEmail({
+            invitedByUsername: session.user?.name! || "admin",
+            username: user?.name!,
+            invitedUserPassword: password,
+            userLanguage: language,
+          }),
+        });
+      } catch {
+        // Email failed but user was created
+      }
+    }
 
     revalidatePath("/[locale]/(routes)/admin", "page");
     return { data: user };
