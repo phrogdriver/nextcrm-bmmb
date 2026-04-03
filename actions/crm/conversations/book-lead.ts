@@ -110,8 +110,8 @@ export const bookLead = async (data: {
         });
       }
 
-      let job = null;
-      let appointment = null;
+      let job: any = null;
+      let appointment: any = null;
 
       // 5. Create job (opportunity) + appointment
       if (data.schedule) {

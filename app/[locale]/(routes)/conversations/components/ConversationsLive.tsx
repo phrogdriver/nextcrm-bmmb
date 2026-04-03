@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import Link from "next/link";
 import {
   Phone, PhoneOff, Plus, Search,
   PhoneIncoming, PhoneOutgoing, User,
@@ -383,28 +384,36 @@ function CustomerPanel({
     );
   }
 
+  const entityUrl = conversation.contactId
+    ? `/crm/contacts/${conversation.contactId}`
+    : conversation.leadId
+    ? `/crm/leads/${conversation.leadId}`
+    : null;
+
   return (
     <div className="p-4 space-y-4">
-      <Card>
-        <CardHeader className="pb-3">
-          <div className="flex items-center justify-between">
-            <CardTitle className="text-sm font-medium">Customer</CardTitle>
-            <Badge variant="outline" className="text-xs">
-              {conversation.contactId ? "Contact" : "Lead"}
-            </Badge>
-          </div>
-        </CardHeader>
-        <CardContent className="space-y-2 text-sm">
-          <div className="flex items-center gap-2">
-            <User className="h-3.5 w-3.5 text-muted-foreground" />
-            <span className="font-medium">{name}</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <Phone className="h-3.5 w-3.5 text-muted-foreground" />
-            <span>{conversation.phoneNumber}</span>
-          </div>
-        </CardContent>
-      </Card>
+      <Link href={entityUrl ?? "#"}>
+        <Card className="hover:bg-muted/50 transition-colors cursor-pointer">
+          <CardHeader className="pb-3">
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-sm font-medium">Customer</CardTitle>
+              <Badge variant="outline" className="text-xs">
+                {conversation.contactId ? "Contact" : "Lead"}
+              </Badge>
+            </div>
+          </CardHeader>
+          <CardContent className="space-y-2 text-sm">
+            <div className="flex items-center gap-2">
+              <User className="h-3.5 w-3.5 text-muted-foreground" />
+              <span className="font-medium">{name ?? "Unknown"}</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <Phone className="h-3.5 w-3.5 text-muted-foreground" />
+              <span>{conversation.phoneNumber}</span>
+            </div>
+          </CardContent>
+        </Card>
+      </Link>
     </div>
   );
 }
