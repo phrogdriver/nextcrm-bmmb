@@ -34,6 +34,10 @@ export function QuickNoteForm({ open, onOpenChange, entityType, entityId }: Quic
       toast.error("Title is required");
       return;
     }
+    if (!description.trim()) {
+      toast.error("Details are required");
+      return;
+    }
 
     setSaving(true);
     try {
@@ -75,7 +79,7 @@ export function QuickNoteForm({ open, onOpenChange, entityType, entityId }: Quic
             />
           </div>
           <div className="space-y-1.5">
-            <Label htmlFor="note-desc">Details</Label>
+            <Label htmlFor="note-desc">Details <span className="text-destructive">*</span></Label>
             <Textarea
               id="note-desc"
               value={description}
@@ -88,7 +92,7 @@ export function QuickNoteForm({ open, onOpenChange, entityType, entityId }: Quic
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)} disabled={saving}>
               Cancel
             </Button>
-            <Button type="submit" disabled={saving || !title.trim()}>
+            <Button type="submit" disabled={saving || !title.trim() || !description.trim()}>
               {saving ? "Saving..." : "Add Note"}
             </Button>
           </div>

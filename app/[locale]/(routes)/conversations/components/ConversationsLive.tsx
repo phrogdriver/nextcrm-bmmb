@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import {
   Phone, PhoneOff, Plus, Search,
-  PhoneIncoming, PhoneOutgoing, User,
+  PhoneIncoming, PhoneOutgoing, User, Briefcase,
   Mic, MicOff,
 } from "lucide-react";
 import { formatDistanceToNow, format } from "date-fns";
@@ -417,6 +417,28 @@ function CustomerPanel({
           </CardContent>
         </Card>
       </Link>
+
+      {/* Jobs */}
+      {conversation.contact?.opportunities && conversation.contact.opportunities.length > 0 && (
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-sm font-medium">Jobs</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-2">
+            {conversation.contact.opportunities.map(({ opportunity: job }) => (
+              <Link key={job.id} href={`/crm/opportunities/${job.id}`}>
+                <div className="flex items-center gap-2 text-sm hover:bg-muted/50 rounded p-1.5 -mx-1.5 transition-colors">
+                  <Briefcase className="h-3.5 w-3.5 text-muted-foreground flex-shrink-0" />
+                  <span className="font-medium truncate">{job.name || job.job_number}</span>
+                  {job.status && (
+                    <Badge variant="secondary" className="text-[10px] ml-auto flex-shrink-0">{job.status}</Badge>
+                  )}
+                </div>
+              </Link>
+            ))}
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 }

@@ -60,7 +60,7 @@ export const updateOpportunity = async (data: {
         currency,
         description,
         expected_revenue: expected_revenue ? Number(expected_revenue) : undefined,
-        name,
+        // name is auto-generated as "job_number: customer" — not editable
         next_step,
         sales_stage: sales_stage || undefined,
         status: "ACTIVE",

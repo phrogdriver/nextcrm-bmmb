@@ -16,7 +16,11 @@ export type ConversationDetail = {
   leadId: string | null;
   trackingNumberId: string | null;
   trackingNumber: { id: string; phoneNumber: string; friendlyName: string; source: string; leadSourceId: string | null } | null;
-  contact: { id: string; first_name: string | null; last_name: string; office_phone: string | null; mobile_phone: string | null } | null;
+  contact: {
+    id: string; first_name: string | null; last_name: string;
+    office_phone: string | null; mobile_phone: string | null;
+    opportunities: Array<{ opportunity: { id: string; name: string | null; job_number: string; status: string | null } }>;
+  } | null;
   lead: { id: string; firstName: string | null; lastName: string; phone: string | null } | null;
   created_by_user: { id: string; name: string | null; avatar: string | null } | null;
 };
@@ -37,7 +41,16 @@ export const getConversationById = async (
       where: { id, deletedAt: null },
       include: {
         contact: {
-          select: { id: true, first_name: true, last_name: true, office_phone: true, mobile_phone: true },
+          select: {
+            id: true, first_name: true, last_name: true, office_phone: true, mobile_phone: true,
+            opportunities: {
+              select: {
+                opportunity: {
+                  select: { id: true, name: true, job_number: true, status: true },
+                },
+              },
+            },
+          },
         },
         lead: {
           select: { id: true, firstName: true, lastName: true, phone: true },

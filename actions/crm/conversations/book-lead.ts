@@ -170,8 +170,12 @@ export const bookLead = async (data: {
       let job: any = null;
       let appointment: any = null;
 
-      // 5. Find default sales stage (first by order, or first alphabetically)
-      const defaultStage = await (tx as any).crm_Opportunities_Sales_Stages.findFirst({
+      // 5. Find "Awaiting Rep Acceptance" stage for booked jobs
+      const awaitingStage = await (tx as any).crm_Opportunities_Sales_Stages.findFirst({
+        where: { name: "Awaiting Rep Acceptance" },
+      });
+      // Fallback to first stage if not found
+      const defaultStage = awaitingStage ?? await (tx as any).crm_Opportunities_Sales_Stages.findFirst({
         orderBy: [{ order: "asc" }, { name: "asc" }],
       });
 
@@ -196,10 +200,11 @@ export const bookLead = async (data: {
         const startDateTime = new Date(`${naive}${offset}`);
         const endDateTime = new Date(startDateTime.getTime() + 60 * 60 * 1000); // 1 hour default
 
+        const customerName = [data.firstName, data.lastName].filter(Boolean).join(" ");
         job = await (tx as any).crm_Opportunities.create({
           data: {
             v: 1,
-            name: `${data.firstName || ""} ${data.lastName} — Inspection`.trim(),
+            name: customerName, // placeholder — updated below with job_number prefix
             description: data.request,
             budget: 0,
             close_date: startDateTime,
@@ -211,7 +216,14 @@ export const bookLead = async (data: {
             contact: contact.id,
             property_id: property?.id ?? undefined,
             sales_stage: defaultStage?.id ?? undefined,
+            status: "ACTIVE",
           },
+        });
+
+        // Set name to "job_number: Customer Name" (uneditable format)
+        await (tx as any).crm_Opportunities.update({
+          where: { id: job.id },
+          data: { name: `${job.job_number}: ${customerName}` },
         });
 
         // Link contact to job via junction table
@@ -300,7 +312,7 @@ export const getProjectManagers = async (
     const session = await getServerSession(authOptions);
     if (!session) return [];
 
-    const where: any = { userStatus: "ACTIVE" };
+    const where: any = { userStatus: "ACTIVE", takingLeads: true };
 
     // Filter by skills: user must have ALL required skills
     if (requiredSkills && requiredSkills.length > 0) {

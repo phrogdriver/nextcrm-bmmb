@@ -1,0 +1,1 @@
+ALTER TABLE "Users" ADD COLUMN "takingLeads" BOOLEAN NOT NULL DEFAULT true;

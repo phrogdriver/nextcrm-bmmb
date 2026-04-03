@@ -29,6 +29,7 @@ import { deactivateUser } from "@/actions/admin/users/deactivate-user";
 import { activateAdmin } from "@/actions/admin/users/activate-admin";
 import { deactivateAdmin } from "@/actions/admin/users/deactivate-admin";
 import { updateUserSkills } from "@/actions/admin/users/update-skills";
+import { toggleTakingLeads } from "@/actions/admin/users/toggle-taking-leads";
 
 const ALL_SKILLS = ["asphalt", "tile", "metal", "tpo/flat", "windows", "siding", "paint"];
 
@@ -200,6 +201,15 @@ export function DataTableRowActions<TData>({
           <DropdownMenuItem onClick={() => onDeactivateAdmin()}>
             <Edit className="mr-2 w-4 h-4" />
             Deactivate Admin rights
+          </DropdownMenuItem>
+          <DropdownMenuItem onClick={async () => {
+            const current = (row.original as any).takingLeads ?? true;
+            const result = await toggleTakingLeads(data.id, !current);
+            if (result.error) toast.error(result.error);
+            else { toast.success(current ? "Removed from lead rotation" : "Added to lead rotation"); router.refresh(); }
+          }}>
+            <Edit className="mr-2 w-4 h-4" />
+            {(row.original as any).takingLeads ? "Remove from Leads" : "Add to Leads"}
           </DropdownMenuItem>
           <DropdownMenuItem onClick={() => { setUserSkills((row.original as any).skills ?? []); setSkillsOpen(true); }}>
             <Wrench className="mr-2 w-4 h-4" />

@@ -7,6 +7,7 @@ import { type Job, type PipelineStage } from "@/actions/crm/get-job";
 import { SplitButton } from "./SplitButton";
 import { useRouter } from "next/navigation";
 import { differenceInDays } from "date-fns";
+import { cn } from "@/lib/utils";
 
 interface JobHeaderProps {
   job: Job;
@@ -40,13 +41,14 @@ export function JobHeader({ job, stages, onTransition, onLogNote }: JobHeaderPro
     : MOCK.address;
 
   const currentStage = stages.find((s) => s.id === job.sales_stage) ?? null;
-  const isInsurance = job.payor_type === "INSURANCE" || (!job.payor_type && MOCK.isInsurance);
+  const isInsurance = job.payor_type === "INSURANCE";
 
   // Days in current stage
   const lastTransition = job.stage_transitions?.[0];
-  const daysInStage = lastTransition
-    ? differenceInDays(new Date(), new Date(lastTransition.transitioned_at))
-    : MOCK.daysInStage;
+  const stageStart = lastTransition
+    ? new Date(lastTransition.transitioned_at)
+    : new Date(job.createdAt);
+  const daysInStage = differenceInDays(new Date(), stageStart);
 
   return (
     <div className="sticky top-0 z-30 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80 border-b">
@@ -92,24 +94,20 @@ export function JobHeader({ job, stages, onTransition, onLogNote }: JobHeaderPro
               {currentStage?.name ?? MOCK.stageName}
             </Badge>
 
-            {/* Insurance badge */}
-            {isInsurance && (
-              <Badge variant="outline" className="whitespace-nowrap">
-                <Shield className="h-3 w-3 mr-1" />
-                Insurance
-              </Badge>
-            )}
+            {/* Payor type badge */}
+            <Badge variant="outline" className="whitespace-nowrap">
+              <Shield className="h-3 w-3 mr-1" />
+              {isInsurance ? "Insurance" : "Cash/Retail"}
+            </Badge>
 
             {/* Days in stage */}
-            {daysInStage != null && daysInStage > 0 && (
-              <Badge
-                variant={daysInStage > 7 ? "destructive" : "outline"}
-                className="whitespace-nowrap"
-              >
-                <Clock className="h-3 w-3 mr-1" />
-                {daysInStage}d in stage
-              </Badge>
-            )}
+            <Badge
+              variant={daysInStage > 7 ? "destructive" : daysInStage > 3 ? "outline" : "secondary"}
+              className={cn("whitespace-nowrap", daysInStage === 0 && "border-green-300 text-green-700 dark:text-green-400")}
+            >
+              <Clock className="h-3 w-3 mr-1" />
+              {daysInStage}d in stage
+            </Badge>
 
             {/* Split button — mock fallback when no real stage */}
             {currentStage ? (

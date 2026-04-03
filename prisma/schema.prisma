@@ -1160,6 +1160,7 @@ model Users {
   password         String?
   username         String?
   skills           String[]     @default([])  // e.g. ["asphalt", "tile", "metal"]
+  takingLeads      Boolean      @default(true) // false = excluded from lead rotation/scheduling
   userStatus       ActiveStatus @default(PENDING)
   userLanguage     Language     @default(en)
 

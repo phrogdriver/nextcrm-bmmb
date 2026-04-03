@@ -124,6 +124,22 @@ export const columns: ColumnDef<AdminUser>[] = [
     enableHiding: true,
   },
   {
+    accessorKey: "takingLeads",
+    header: ({ column }) => (
+      <DataTableColumnHeader column={column} title="Taking Leads" />
+    ),
+    cell: ({ row }) => {
+      const taking = row.original.takingLeads;
+      return (
+        <Badge variant={taking ? "default" : "secondary"} className="text-[10px]">
+          {taking ? "Yes" : "No"}
+        </Badge>
+      );
+    },
+    enableSorting: true,
+    enableHiding: true,
+  },
+  {
     accessorKey: "skills",
     header: ({ column }) => (
       <DataTableColumnHeader column={column} title="Skills" />
