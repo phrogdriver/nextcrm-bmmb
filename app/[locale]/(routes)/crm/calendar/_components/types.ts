@@ -64,3 +64,64 @@ export const STATUS_STYLES: Record<string, string> = {
   COMPLETED: "bg-green-50 border-green-200 text-green-600",
   CANCELLED: "bg-red-50 border-red-200 text-red-600",
 };
+
+// ─── Tab types ───────────────────────────────────────────────────────────────
+
+export type CalendarTab = "company" | "sales" | "production" | "crews";
+
+// ─── Purchase Order types ────────────────────────────────────────────────────
+
+export type CalendarPO = {
+  id: string;
+  job_id: string;
+  po_number: string | null;
+  vendor_name: string;
+  description: string | null;
+  category: string | null;
+  status: string;
+  amount: string | null;
+  scheduled_date: string;
+  job: { id: string; name: string | null; job_number: string | null } | null;
+  vendor: { id: string; name: string; phone: string | null } | null;
+};
+
+export type CalendarVendor = {
+  id: string;
+  name: string;
+  phone: string | null;
+  type: string | null;
+};
+
+export type CalendarJob = {
+  id: string;
+  name: string | null;
+  job_number: string | null;
+};
+
+export type ProductionCalendarData = {
+  appointments: CalendarAppointment[];
+  purchaseOrders: CalendarPO[];
+  jobs: CalendarJob[];
+};
+
+export type CrewCalendarData = {
+  vendors: CalendarVendor[];
+  purchaseOrders: CalendarPO[];
+};
+
+export const PO_CATEGORY_COLORS: Record<string, { bg: string; border: string; text: string }> = {
+  labor: { bg: "bg-orange-100 dark:bg-orange-900/30", border: "border-orange-400", text: "text-orange-700 dark:text-orange-300" },
+  materials: { bg: "bg-teal-100 dark:bg-teal-900/30", border: "border-teal-400", text: "text-teal-700 dark:text-teal-300" },
+  "haul-off": { bg: "bg-slate-100 dark:bg-slate-900/30", border: "border-slate-400", text: "text-slate-700 dark:text-slate-300" },
+  equipment: { bg: "bg-indigo-100 dark:bg-indigo-900/30", border: "border-indigo-400", text: "text-indigo-700 dark:text-indigo-300" },
+  other: { bg: "bg-purple-100 dark:bg-purple-900/30", border: "border-purple-400", text: "text-purple-700 dark:text-purple-300" },
+};
+
+export const PO_STATUS_STYLES: Record<string, string> = {
+  DRAFT: "bg-slate-50 border-slate-200 text-slate-600",
+  ORDERED: "bg-amber-50 border-amber-200 text-amber-600",
+  DISPATCHED: "bg-blue-50 border-blue-200 text-blue-600",
+  RECEIVED: "bg-green-50 border-green-200 text-green-600",
+  COMPLETED: "bg-green-50 border-green-200 text-green-600",
+  CANCELLED: "bg-red-50 border-red-200 text-red-600",
+};

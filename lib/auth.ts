@@ -33,7 +33,7 @@ function getOptionalProviders() {
 }
 
 export const authOptions: NextAuthOptions = {
-  secret: process.env.JWT_SECRET,
+  secret: process.env.NEXTAUTH_SECRET,
   //adapter: PrismaAdapter(prismadb),
   session: {
     strategy: "jwt",
