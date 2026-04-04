@@ -1365,7 +1365,7 @@ export function ConversationsLive({ initialConversations }: Props) {
       {/* Customer panel */}
       <ResizablePanel defaultSize="25%" minSize="20%" maxSize="35%">
         <div className="flex flex-col h-full overflow-hidden">
-          <div className="flex-shrink-0 p-4 border-b flex items-center min-h-[68px]">
+          <div className="flex-shrink-0 p-4 border-b flex items-center min-h-[77px]">
             <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Customer</h3>
           </div>
           <ScrollArea className="flex-1">
