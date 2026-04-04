@@ -1269,21 +1269,21 @@ export function ConversationsLive({ initialConversations }: Props) {
             <>
               {/* Header */}
               <div className="flex-shrink-0 p-4 border-b">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <Avatar className="h-9 w-9">
+                <div className="flex items-center justify-between gap-2">
+                  <div className="flex items-center gap-3 min-w-0">
+                    <Avatar className="h-9 w-9 shrink-0">
                       <AvatarFallback>{getInitials(detailName)}</AvatarFallback>
                     </Avatar>
-                    <div>
-                      <h3 className="font-semibold">{detailName}</h3>
-                      <p className="text-sm text-muted-foreground">{detail.phoneNumber}</p>
+                    <div className="min-w-0">
+                      <h3 className="font-semibold truncate">{detailName}</h3>
+                      <p className="text-sm text-muted-foreground truncate">{detail.phoneNumber}</p>
                     </div>
                   </div>
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-1.5 shrink-0">
                     <Badge variant={detail.status === "open" ? "default" : "secondary"}>
                       {detail.status}
                     </Badge>
-                    <Button size="sm" variant="outline" title="Call" onClick={handleDial}>
+                    <Button size="icon" variant="outline" title="Call" onClick={handleDial} className="h-8 w-8">
                       <Phone className="h-4 w-4" />
                     </Button>
                     <Button size="sm" variant="outline" onClick={handleToggleStatus}>
@@ -1365,7 +1365,7 @@ export function ConversationsLive({ initialConversations }: Props) {
       {/* Customer panel */}
       <ResizablePanel defaultSize="25%" minSize="20%" maxSize="35%">
         <div className="flex flex-col h-full overflow-hidden">
-          <div className="flex-shrink-0 p-4 border-b">
+          <div className="flex-shrink-0 p-4 border-b flex items-center min-h-[68px]">
             <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Customer</h3>
           </div>
           <ScrollArea className="flex-1">
