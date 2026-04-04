@@ -11,7 +11,7 @@ export default async function ConversationsPage() {
   const { data: conversations } = await getConversations();
 
   return (
-    <div className="-my-5 -mx-4 h-[calc(100vh-4.5rem)] overflow-hidden">
+    <div className="-mt-5 -mb-5 -mx-4 h-[calc(100vh-65px)] overflow-hidden">
       <ConversationsLive initialConversations={conversations} />
     </div>
   );
